@@ -251,6 +251,37 @@ pm2 把这些都包好了，一条命令启动，一条命令看日志。
 它们是给人用的，不是给服务用的。
 ```
 
+**为什么这一周不用第 29 周学的 Docker**
+
+你已经会 `docker compose up -d` 了。它确实同时满足这四个要求。**这一周故意不用它，有三个理由：**
+
+```text
+① 容器把"进程怎么死的"藏起来了
+   容器里 Node 崩了，容器跟着退出，你看到的是 Exit 1。
+   裸机跑一遍，你才知道其实是"内存不够被 OOM killer 杀了"。
+
+② 这一周的几个坑，只在裸机上出现
+   Node 版本太老（apt 装的是 12/18）、npm ci 被 OOM 杀掉、
+   缺编译工具装不上 better-sqlite3、进程只听 0.0.0.0。
+   这些在容器里全被遮掉，但你交付私有化项目时会全部撞上（第 34 周）。
+
+③ 有些客户的老服务器装不了 Docker
+   内核太老、没有 root、不允许装第三方运行时。
+   会裸机部署，你才有保底手段。
+```
+
+**两条路线的对应关系（记住这张表，排查时通用）：**
+
+| 要查什么 | 容器方案（W30） | 裸机方案（本周） |
+|---|---|---|
+| 程序在跑吗 | `docker compose ps` | `pm2 list` |
+| 看日志 | `docker compose logs -f app` | `pm2 logs chat-app` |
+| 重启 | `docker compose restart app` | `pm2 restart chat-app` |
+| 开机自启 | `restart: unless-stopped` | `pm2 save` + `pm2 startup` |
+| 进到程序里 | `docker compose exec app sh` | `ssh` 进去本来就是 |
+
+**层次和顺序完全一样，只是命令换了。** 第 217 节的八步排查法，第 4 步在这周是 `pm2 list`，换到容器方案就是 `docker compose ps`。
+
 ---
 
 # 第 2 步：装 pm2（10 分钟）
