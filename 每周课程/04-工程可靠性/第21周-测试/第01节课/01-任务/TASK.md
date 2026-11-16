@@ -735,13 +735,13 @@ A：**测不到就直接写在测试里，或者提取成命名函数。**
 
 ```javascript
 // 如果它在某个函数内部
-function process(items) {
+function processA(items) {
   return items.map((x) => x * 2);   // ← 这个测不到
 }
 
 // 提取出来
 export const double = (x) => x * 2;
-function process(items) { return items.map(double); }
+function processB(items) { return items.map(double); }
 ```
 
 **"为了可测而提取"，本身就是好设计** —— 它让职责更清晰。

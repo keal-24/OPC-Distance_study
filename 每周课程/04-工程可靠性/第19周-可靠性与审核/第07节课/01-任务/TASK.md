@@ -65,12 +65,12 @@
 
 **你必须先确认这六个函数签名，否则接不起来：**
 
-```javascript
+```text
 // ① 入口审核
 guardInput(input, opts) → { ok, blocking, reasons, detail }
 
 // ② 模型调用
-caller.call(input, traceId) → 
+caller.call(input, traceId) →
   { ok:true, text, which, degraded, elapsed, usage } |
   { ok:false, status, body, traceId }        // 兜底响应
 
@@ -790,12 +790,12 @@ ok: false, blocking: false → 有这个信号但不拦（比如只有 1 条结�
 A：**并发采样。**
 
 ```javascript
-// 串行：3 × 3.6 = 10.8 秒
-const runs = [];
-for (let i = 0; i < 3; i++) runs.push(await call(input));
+// ❌ 串行：3 × 3.6 = 10.8 秒
+const runsA = [];
+for (let i = 0; i < 3; i++) runsA.push(await call(input));
 
-// 并发：max(3.6) = 3.6 秒
-const runs = await Promise.all([call(input), call(input), call(input)]);
+// ✅ 并发：max(3.6) = 3.6 秒
+const runsB = await Promise.all([call(input), call(input), call(input)]);
 ```
 
 **成本一样（3 次调用），耗时从 3T 变成 T。**

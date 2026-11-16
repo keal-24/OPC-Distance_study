@@ -248,8 +248,11 @@ export const config = {
 **① 为什么 `need()` 会在缺失时抛错**
 
 ```javascript
-export const config = { port: num("PORT", 3000) };   // 有默认值，不会抛
-export const config = { key: need("KEY_PRIMARY") };  // 没配就抛
+// 有默认值：缺了也能跑
+port: num("PORT", 3000),
+
+// 没默认值：缺了就抛错
+key: need("KEY_PRIMARY"),
 ```
 
 **区别在于"这个值缺失了，系统还能不能工作"。**

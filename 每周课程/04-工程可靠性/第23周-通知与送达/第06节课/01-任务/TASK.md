@@ -403,7 +403,7 @@ async function checkDkim(domain, selector) {
   const problems = [];
   if (!p) problems.push("没有 p=（公钥）");
   if (p && p.length < 100) problems.push(`公钥只有 ${p.length} 字符，太短（可能不是完整公钥）`);
-  if (dkim.includes("p=;") || /p=\s*;/.test(dkim)) problems.push("p 为空（表示"此密钥已撤销"）");
+  if (dkim.includes("p=;") || /p=\s*;/.test(dkim)) problems.push("p 为空，表示此密钥已撤销");
 
   return {
     ok: problems.length === 0,

@@ -406,7 +406,7 @@ config/index.js 的整个职责就是读 process.env
 
 **③ 为什么注释要跳过**
 
-```javascript
+```text
 // 不要用 console.log    ← 这行不该被报
 const port = 3000;       ← 这行该被报
 ```
@@ -445,9 +445,7 @@ node scripts/lint.js
 
 **如果第一次有 200 处，不要试图一天修完。**
 
-```javascript
-// 允许白名单：已经存在的违规先记下来，新增的不许有
-// scripts/lint-baseline.json
+```json
 {
   "C5": ["app/routes/old.js:42", "app/routes/old.js:88"],
   "C3": ["app/lib/legacy.js:15"]

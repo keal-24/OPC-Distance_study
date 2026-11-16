@@ -122,7 +122,7 @@ need_human 判 true 的条件（满足任一）：
 
 **③ "不要 markdown 代码块"这句要留**
 
-不加，模型会给你 ` ```json ... ``` `，然后你的 `JSON.parse` 全炸。
+不加，模型会给你一堆 json 围栏（三个反引号包一层），然后你的 `JSON.parse` 全炸。
 
 ## 1.4 改提示词的纪律
 
@@ -494,7 +494,7 @@ console.log(JSON.stringify(JSON.parse(l), null, 2));
    不一样 → 供应商给你换版本了，记下来
 
 ② output_text 是不是纯 JSON？
-   带 ```json 包裹 → prompt.txt 里的"不要 markdown 代码块"没生效，
+   带 json 围栏包裹 → prompt.txt 里的"不要 markdown 代码块"没生效，
    或者模型不听话。这是第 124 节要处理的问题
 
 ③ usage 两个数字都不是 null？
@@ -643,7 +643,7 @@ console.log('\n可解析',ok,'不可解析',bad);
 **大概率有 3–8 条不可解析。** 三种原因：
 
 ```text
-① 模型加了 ```json 包裹   → 第 124 节写一个 stripFence() 就能救
+① 模型加了 json 围栏   → 第 124 节写一个 stripFence() 就能救
 ② 模型输出被截断          → max_tokens 太小（现在 400，可能不够）
 ③ 模型夹了中文解释        → 提示词不够硬，或者模型能力不足
 ```
@@ -818,7 +818,7 @@ chmod +x run-all.sh
 ## 练习三：判断这三种情况该怎么处理（15 分钟）
 
 ```text
-甲：30 条里 8 条输出带 ```json 包裹
+甲：30 条里 8 条输出带 json 围栏包裹
 乙：30 条里 2 条输出被截断（最后缺个 }）
 丙：30 条里 5 条输出是中文解释，没有 JSON
 ```

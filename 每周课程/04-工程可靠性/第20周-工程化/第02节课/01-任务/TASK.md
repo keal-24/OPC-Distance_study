@@ -1001,6 +1001,7 @@ A：**问一句："这个值错了，系统会静默地做错事吗？"**
 A：**把长度阈值做成配置项，不要写死 30。**
 
 ```javascript
+// config/index.js 里
 keyMinLen: num("KEY_MIN_LENGTH", 30),
 ```
 

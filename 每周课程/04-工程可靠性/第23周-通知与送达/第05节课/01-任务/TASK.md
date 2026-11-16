@@ -643,7 +643,7 @@ mailRouter.get("/mail/stats", wrap(async (req, res) => {
 
 ## 4.1 没有签名验证会怎样
 
-```javascript
+```text
 // 攻击者：随便 POST 一个
 POST /api/webhook/mail
 { "message_id": "<你的真message-id>", "event": "delivered" }

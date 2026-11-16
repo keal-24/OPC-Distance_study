@@ -554,15 +554,16 @@ API：    need_human: true/false
 
 ```javascript
 // scripts/check-docs.js
-// 从 API.md 里抽出所有 ```bash 代码块中的 curl，逐个执行，比对期望
+// 从 API.md 里抽出所有 bash 代码块中的 curl，逐个执行，比对期望
 
 import fs from "node:fs";
 import { execSync } from "node:child_process";
 
 const md = fs.readFileSync("API.md", "utf8");
 
-// 匹配 ```bash ... ``` 块
-const blocks = [...md.matchAll(/```bash\n([\s\S]*?)```/g)].map((m) => m[1]);
+// 匹配 bash 代码块（三条反引号包裹）
+const FENCE = "\x60\x60\x60";   // 三条反引号，写成转义避免打断本文件的代码块
+const blocks = [...md.matchAll(new RegExp(FENCE + "bash\\n([\\s\\S]*?)" + FENCE, "g"))].map((m) => m[1]);
 
 const curls = [];
 for (const b of blocks) {

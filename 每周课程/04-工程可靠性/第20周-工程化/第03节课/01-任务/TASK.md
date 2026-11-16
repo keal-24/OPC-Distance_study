@@ -1043,10 +1043,12 @@ token + IP 白名单 → 可接受
 
 A：**可以在 config 里做"继承"。**
 
-```javascript
-// .env.development 里写
+```bash
+# .env.development 里写
 BASE_CONFIG=.env.base
+```
 
+```javascript
 // config/index.js 里
 const base = process.env.BASE_CONFIG;
 if (base) dotenv.config({ path: base });

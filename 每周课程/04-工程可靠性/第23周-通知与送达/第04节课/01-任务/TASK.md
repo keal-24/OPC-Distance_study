@@ -350,41 +350,45 @@ if (kind === FAILURE.HARD || kind === FAILURE.FATAL) {
 **给假 SMTP 加"按需返回不同错误"的能力：**
 
 ```javascript
-// notify/fake-smtp.js 的 onRcptTo 里扩展
-onRcptTo(address, session, callback) {
-  const addr = address.address;
+// notify/fake-smtp.js 的 SMTPServer 配置里扩展
+const server = new SMTPServer({
+  // ... 其他配置
 
-  // 硬退：地址不存在
-  if (addr.startsWith("hard-")) {
-    const e = new Error("550 5.1.1 User unknown");
-    e.responseCode = 550;
-    return callback(e);
-  }
+  onRcptTo(address, session, callback) {
+    const addr = address.address;
 
-  // 软退：前 N 次拒绝，第 N+1 次接受
-  if (addr.startsWith("soft-")) {
-    const key = "soft:" + addr;
-    const n = (softAttempts.get(key) ?? 0) + 1;
-    softAttempts.set(key, n);
-    const limit = Number(process.env.SOFT_REJECT_TIMES ?? 2);
-
-    if (n <= limit) {
-      const e = new Error("421 4.7.0 Try again later");
-      e.responseCode = 421;
+    // 硬退：地址不存在
+    if (addr.startsWith("hard-")) {
+      const e = new Error("550 5.1.1 User unknown");
+      e.responseCode = 550;
       return callback(e);
     }
-    // 第 limit+1 次通过
-  }
 
-  // 超配额
-  if (addr.startsWith("full-")) {
-    const e = new Error("552 5.2.2 Mailbox full");
-    e.responseCode = 552;
-    return callback(e);
-  }
+    // 软退：前 N 次拒绝，第 N+1 次接受
+    if (addr.startsWith("soft-")) {
+      const key = "soft:" + addr;
+      const n = (softAttempts.get(key) ?? 0) + 1;
+      softAttempts.set(key, n);
+      const limit = Number(process.env.SOFT_REJECT_TIMES ?? 2);
 
-  callback();
-}
+      if (n <= limit) {
+        const e = new Error("421 4.7.0 Try again later");
+        e.responseCode = 421;
+        return callback(e);
+      }
+      // 第 limit+1 次通过
+    }
+
+    // 超配额
+    if (addr.startsWith("full-")) {
+      const e = new Error("552 5.2.2 Mailbox full");
+      e.responseCode = 552;
+      return callback(e);
+    }
+
+    callback();
+  },
+});
 ```
 
 **测试：**

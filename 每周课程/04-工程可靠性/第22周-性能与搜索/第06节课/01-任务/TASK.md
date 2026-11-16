@@ -425,7 +425,7 @@ SELECT * FROM tickets ORDER BY hot_score DESC, id DESC LIMIT 20;
 
 **② 为什么时间衰减要用"毫秒差 / 3600000"**
 
-```javascript
+```sql
 - (? - created_at) / 3600000.0 * 0.5
 ```
 

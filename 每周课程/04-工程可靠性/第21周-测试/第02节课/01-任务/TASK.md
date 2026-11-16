@@ -829,8 +829,13 @@ node --test --test-reporter=spec test/
 A：**取决于你 import 哪个：**
 
 ```javascript
-import assert from "node:assert";          // equal 用 ==
-import assert from "node:assert/strict";   // equal 用 ===
+// A 版：宽松
+import assertA from "node:assert";          // equal 用 ==
+assertA.equal("600", 600);                  // 通过（你可能不想这样）
+
+// B 版：严格
+import assertB from "node:assert/strict";   // equal 用 ===
+assertB.equal("600", 600);                  // 失败（这才是你要的）
 ```
 
 **统一用 `/strict`。** 否则 `assert.equal("600", 600)` 会通过，而你可能想让它失败。
