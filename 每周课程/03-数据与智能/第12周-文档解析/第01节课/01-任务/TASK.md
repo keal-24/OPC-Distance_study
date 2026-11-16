@@ -29,7 +29,7 @@
 
 你先写的代码一定是这样的：
 
-```javascript
+```text
 const ext = path.extname(filePath);
 if (ext === ".pdf") { ... }
 else if (ext === ".docx") { ... }

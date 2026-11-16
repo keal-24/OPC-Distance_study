@@ -599,7 +599,7 @@ async function parseOne(filePath) {
 
 ## 3.5 为什么不能用"修改时间"判断
 
-```javascript
+```text
 // 诱人但错误的写法
 if (fs.statSync(f).mtimeMs <= exist.file_mtime) continue;
 ```

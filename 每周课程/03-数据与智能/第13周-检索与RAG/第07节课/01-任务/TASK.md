@@ -99,7 +99,7 @@ k=60  → 第 1 名 1/61=0.0164，第 2 名 1/62=0.0161，第 10 名 1/70=0.0143
 | `eval.js` | 同上 | 评测：命中率、top-1 准确、MRR |
 | `eval-cases.js` | 同上 | 12 个带标准答案的问题 |
 | `out\compare.md` | 同上 `out\` | 三种检索的完整对比 + 结论 |
-| `NOTES.md` | `第07节课\02-笔记\` | 第 7 步填 |
+| `NOTES.md` | `第07节课\02-笔记\` | 第 6 步填 |
 
 ---
 
@@ -409,7 +409,7 @@ node tools\check-gold.js
 
 **先明确一件事：不合并分数，只合并名次。**
 
-```javascript
+```text
 // ✗ 错误：合并分数
 all.sort((a, b) => b.score - a.score);
 
@@ -694,7 +694,7 @@ node search-hybrid.js "什么情况不得对外发送"
 
 **`rrfFuse` 里我做了一件需要明确的事：**
 
-```javascript
+```text
 score: m.rawScores.vector === undefined ? m.rawScores.keyword : m.rawScores.vector,
 ```
 

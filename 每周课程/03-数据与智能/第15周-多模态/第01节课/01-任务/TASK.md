@@ -726,7 +726,7 @@ iVBORw0KGgoAAAANSUhEUgAAAZAAAAEsCAIAAABi1X
 
 纯文本请求长这样：
 
-```javascript
+```text
 {
   model: "你的模型名",
   messages: [
@@ -737,7 +737,7 @@ iVBORw0KGgoAAAANSUhEUgAAAZAAAAEsCAIAAABi1X
 
 带图片的请求长这样：
 
-```javascript
+```text
 {
   model: "你的模型名",
   messages: [
@@ -767,7 +767,7 @@ iVBORw0KGgoAAAANSUhEUgAAAZAAAAEsCAIAAABi1X
 
 **最容易错的地方：`content` 是数组以后，文字也必须包成对象。** 你不能写：
 
-```javascript
+```text
 content: ["这张图里有什么", { type: "image_url", ... }]
 ```
 
@@ -1625,7 +1625,7 @@ shot.png | image/png | 400 x 300 | 1061 字节 | base64 长度 1416
 
 在 `lib/mock.js` 里，把 `mockChatCompletion` 最后的 `usage` 那一行改成按 `detail` 算：
 
-```javascript
+```text
   const detail = (body.messages[1].content[1].image_url.detail) || "auto";
   const imgTokens = detail === "low" ? 320 : detail === "high" ? 1560 : 980;
 
@@ -1694,7 +1694,7 @@ detail=high  {"prompt_tokens":1760,"completion_tokens":260,"total_tokens":2020}
 
 **操作：** 打开 `lib/vision.js`，把 `buildMessages` 里的 `content` 数组改成字符串：
 
-```javascript
+```text
 {
   role: "user",
   content: "这张图里有什么？" + toDataUrl(base64, mime)

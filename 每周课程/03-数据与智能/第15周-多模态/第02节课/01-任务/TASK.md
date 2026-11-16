@@ -1242,7 +1242,7 @@ SyntaxError: Unexpected token '`', "```json
 
 **手动构造的办法**：在 `mock.js` 的 `badjson` 分支里，把返回内容改成：
 
-```javascript
+```text
 content: "```json\n{\"doc_type\":\"invoice\",\"fields\":{}}\n```",
 ```
 
@@ -1252,7 +1252,7 @@ content: "```json\n{\"doc_type\":\"invoice\",\"fields\":{}}\n```",
 
 **操作：** 把提示词里"金额只写数字"那条规则删掉，然后手动把假数据改成：
 
-```javascript
+```text
 total_amount: { value: "¥1,299.00", confidence: 0.95 },
 ```
 

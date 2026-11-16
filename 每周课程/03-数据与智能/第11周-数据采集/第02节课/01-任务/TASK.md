@@ -1083,7 +1083,7 @@ console.log("本次耗时", Date.now() - start, "毫秒");
 
 ## 九、换成真实站点要改哪三行
 
-```javascript
+```text
 （凭记忆写，不要看课件）
 ```
 

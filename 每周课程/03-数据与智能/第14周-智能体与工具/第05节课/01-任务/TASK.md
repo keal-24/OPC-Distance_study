@@ -132,7 +132,7 @@ finish_reason：stop
 
 打开 `mock-llm.js`，找到这一段：
 
-```javascript
+```text
   // 已经有工具结果 → 给最终答案
   if (toolMessages.length > 0) {
 ```

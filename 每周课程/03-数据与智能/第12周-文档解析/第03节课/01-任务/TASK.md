@@ -705,7 +705,7 @@ CSV 和 xlsx 现在是两种返回结构。上层代码如果分别处理，每�
 
 **统一成一个函数 `readTable(filePath)`，返回同一种结构：**
 
-```javascript
+```text
 {
   title: "预算",
   sheets: [

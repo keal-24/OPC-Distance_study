@@ -790,7 +790,7 @@ form.append("model", config.STT_MODEL);
 
 **最后那一条是最容易犯的错：**
 
-```javascript
+```text
 // 错误写法
 headers: {
   "Content-Type": "multipart/form-data",   // ← 缺 boundary，必失败
@@ -1330,7 +1330,7 @@ node scripts\error-table.js
 
 ## 错误 1：手写 `Content-Type: multipart/form-data`
 
-```javascript
+```text
 // 错误写法
 headers: {
   "Content-Type": "multipart/form-data",
@@ -1352,7 +1352,7 @@ headers: {
 
 **正确做法：** **不要设 `Content-Type`**，让 `fetch` 自己设。
 
-```javascript
+```text
 headers: {
   Authorization: "Bearer " + key,   // 只给这个
 }

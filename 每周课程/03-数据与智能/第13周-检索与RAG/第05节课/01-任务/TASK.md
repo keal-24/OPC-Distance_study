@@ -1567,7 +1567,7 @@ const rows = db.prepare("SELECT * FROM chunks").all();
 
 **正确做法：**
 
-```javascript
+```text
 // 只取需要的列
 SELECT id, doc_id, seq, embedding FROM chunks WHERE embedding IS NOT NULL
 ```
@@ -1607,7 +1607,7 @@ CREATE TABLE chunk_vectors (
 
 打开 `第05节课\02-笔记\NOTES.md`，按小标题逐条填。
 
-重点是「假向量 vs 真模型的对比」和「暴力扫描的极限」两节。
+重点是「假向量 vs 真模型」和「暴力扫描的极限」两节。
 
 ---
 

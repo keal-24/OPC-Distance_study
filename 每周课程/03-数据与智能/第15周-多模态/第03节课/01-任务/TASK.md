@@ -555,11 +555,13 @@ node scripts\imagine-lab.js
 
 ```javascript
 // 一长串（大部分人的写法）
-"a beautiful autumn forest path with fallen leaves, realistic photography,
- soft natural light, low angle, path extending to depth, no people, no text,
- 1024x1024"
+const prompt = "a beautiful autumn forest path with fallen leaves, realistic photography, " +
+  "soft natural light, low angle, path extending to depth, no people, no text, 1024x1024";
+```
 
-// 问题：
+**它的三个问题：**
+
+```text
 ① 改一个要素要重写整句
 ② 你不知道哪一段在起作用
 ③ 出现问题时无法定位"是风格的问题还是构图的问题"
@@ -1094,7 +1096,7 @@ const prompt = "公司宣传图，主色必须是 #FF5722，和品牌手册完�
 
 ## 错误 3：以为图生图端点一定存在
 
-```javascript
+```text
 const res = await fetch(BASE_URL + "/images/edits", ...);
 ```
 
@@ -1165,7 +1167,7 @@ fs.writeFileSync(localPath, buf);
 
 打开 `第03节课\02-笔记\NOTES.md`，按小标题逐条填。
 
-重点是「该不该生图的判断表」和「四段提示词」。
+重点是「五种"不该用生图"的需求」和「提示词四段」。
 
 ---
 

@@ -672,7 +672,7 @@ node scripts\probe-split.js
 
 **合并的判断条件：**
 
-```javascript
+```text
 if (last.length < min && prev.length + last.length <= max * 1.1)
 ```
 
@@ -1084,7 +1084,7 @@ model 还是 "tts-1"
 
 **做什么：** 写 `lib\speak.js`，对外只有一个函数：
 
-```javascript
+```text
 speak(text, options) -> { segments: [...], stats: {...} }
 ```
 

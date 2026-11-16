@@ -658,7 +658,7 @@ module.exports = { runAgent };
 
 **`dispatch.js` 里也要给致命错误打标记**（第 96 节说过，没写的现在补上）：
 
-```javascript
+```text
   } catch (e) {
     const fatal = /no such table|unable to open database|database is locked/i.test(e.message);
     return { ok: false, error: e.message, fatal: fatal };

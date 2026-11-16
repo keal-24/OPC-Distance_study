@@ -13,7 +13,7 @@
 
 你会关键词检索：
 
-```javascript
+```text
 searchKeyword("报销 住宿")   →  命中 1 块，score=-1.64
 ```
 
@@ -164,7 +164,7 @@ embedding  →  把文字变成向量
 
 真实模型给的向量长这样（示意，不是真实值）：
 
-```javascript
+```text
 // 真实 embedding 大概长这样：1536 个浮点数，每个在 -1 到 1 之间
 [-0.0234, 0.0891, -0.1176, 0.0442, 0.0038, -0.0912, ... 共 1536 个]
 ```
@@ -364,7 +364,7 @@ module.exports = { cosine, dot, norm };
 
 **第二条特别重要：**
 
-```javascript
+```text
 [1, 2] 和 [0, 0]
   → NaN 会传染：NaN > 0.5 是 false，NaN < 0.5 也是 false
   → 你的排序函数里所有比较都失败，结果顺序变成"随机"
@@ -851,7 +851,7 @@ function search(q) {
 
 **更重要的是第二层错：**
 
-```javascript
+```text
 // 有人会为了"优化"改成点积
 .map((c) => ({ ...c, score: dot(qn, c.vector) }))   // ← 想省一次开根号
 ```

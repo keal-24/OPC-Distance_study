@@ -522,7 +522,7 @@ for (const r of freq) {
 
 **做什么：** 把前面两步拼成一个函数，签名固定：
 
-```javascript
+```text
 searchKeyword(query, options) -> [{ id, doc_id, page, seq, score, snippet, text }]
 ```
 
@@ -1218,7 +1218,7 @@ const hits = db
 
 **正确做法：** 用 `LIMIT` 取前 N 条，不要设绝对阈值。
 
-```javascript
+```text
 ORDER BY bm25(chunks_fts) LIMIT ?   -- ← 这个就够了
 ```
 

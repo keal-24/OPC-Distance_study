@@ -217,7 +217,7 @@ function caseContentFilter() {
   console.log("在内部系统里几乎不会触发（输入是发票、合同）。");
   console.log("但客户传身份证、人脸、银行卡时可能触发。");
   console.log("");
-  console.log("所以你不测"触发"，你测"分支存在"：");
+  console.log("所以你不测「触发」，你测「分支存在」：");
   console.log("  打开 lib\\vision.js，确认有：");
   console.log("    if (choice.finish_reason === \"content_filter\") { throw ... }");
   console.log("");
@@ -259,7 +259,7 @@ async function caseAuth() {
     const f = fingerprint(err);
     show(f);
     console.log("");
-    console.log("  → 401 是"key 不对"，429 才是"限流/额度"，别混");
+    console.log("  → 401 是「key 不对」，429 才是「限流/额度」，别混");
   }
 }
 
@@ -282,8 +282,8 @@ async function caseBadResponse() {
     const f = fingerprint(err);
     show(f);
     console.log("");
-    console.log("  → 这不是网络错误，是"你拿 HTML 当 JSON 解析"");
-    console.log("    如果不单独分类，用户会以为"网络不好"");
+    console.log("  → 这不是网络错误，是「你拿 HTML 当 JSON 解析」");
+    console.log("    如果不单独分类，用户会以为「网络不好」");
   }
 }
 
@@ -350,7 +350,7 @@ async function main() {
   if (config.MOCK) {
     console.log("");
     console.log("!!! MOCK 模式下这些错误一个都触发不了。");
-    console.log("!!! 今天的核心就是"看真实的错误长什么样"。");
+    console.log("!!! 今天的核心就是「看真实的错误长什么样」。");
     console.log("!!! 请把 .env 的 MOCK 改成 false，并配置 VISION_MODEL。");
     console.log("");
     return;
@@ -1066,7 +1066,7 @@ async function main() {
   console.log("");
   console.log("三次重试的理论总等待：1000 + 2000 + 4000 = 7000ms");
   console.log("加上 4 次请求本身的耗时 → 用户最多等 7–10 秒");
-  console.log("→ 所以 UI 上必须有"重试中…"的提示，不能让人干等");
+  console.log("→ 所以 UI 上必须有「重试中…」的提示，不能让人干等");
 }
 
 main().catch((e) => { console.error(e); process.exitCode = 1; });
@@ -1249,7 +1249,7 @@ app.use(errorHandler);
 
 **并把现有路由包起来。** 打开 `routes\vision.js`，把：
 
-```javascript
+```text
 router.post("/vision", async (req, res) => { ... });
 ```
 
@@ -1369,7 +1369,7 @@ UNKNOWN        → 500
 
 ## 错误 1：只判断 `res.ok`
 
-```javascript
+```text
 // 错误写法
 const res = await fetch(url, {...});
 const json = await res.json();          // ← 没检查 ok
@@ -1405,7 +1405,7 @@ if (!res.ok) {
 
 ## 错误 2：对所有错误一律重试
 
-```javascript
+```text
 // 错误写法
 for (let i = 0; i < 3; i += 1) {
   try { return await call(); } catch (e) { /* 继续重试 */ }
@@ -1462,7 +1462,7 @@ res.status(500).json({ error: err.message });
 
 ## 错误 4：以为 `CONTENT_FILTER` 一定是非 200
 
-```javascript
+```text
 // 错误写法
 if (!res.ok) { throw ... }
 const json = await res.json();

@@ -64,7 +64,7 @@
 | `fetch-pages.js` | `第04节课/03-练习代码/collector/` | 三种分页 + 终止条件 + 断点续抓 |
 | `state.json` | 同上 | 记到第几页了 |
 | `items-paged.json` | 同上 | 抓全的 30 条 |
-| `NOTES.md` | `第04节课/02-笔记/` | 第 6 步填 |
+| `NOTES.md` | `第04节课/02-笔记/` | 第 7 步填 |
 
 ---
 
@@ -859,7 +859,7 @@ main();
 
 现在有三个几乎一样的函数。改成：
 
-```javascript
+```text
 async function collect(fetchPage, getNext, isDone) { ... }
 ```
 

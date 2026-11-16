@@ -147,6 +147,8 @@ finish_reason：stop
 **在 `tools.js` 的 `TOOLS` 数组里，`get_order` 后面加两项：**
 
 ```javascript
+// 往 TOOLS 数组里追加这两项
+const NEW_TOOLS = [
   {
     type: "function",
     function: {
@@ -199,6 +201,7 @@ finish_reason：stop
       }
     }
   }
+];
 ```
 
 **在 `tools-run.js` 里加两个函数（文件顶部补 `fs` 和 `Database`）：**
@@ -815,7 +818,7 @@ node -e "const p=require('./permission'); console.log(JSON.stringify(p.checkPerm
 
 **操作：** 在 `agent.js` 里，把被拒绝的分支改成"跳过"：
 
-```javascript
+```text
       if (result.denied) {
         continue;
       }

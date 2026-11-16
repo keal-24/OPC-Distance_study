@@ -589,7 +589,7 @@ INSERT INTO items (source, source_id, title) VALUES ('mock', '5', '新标题');
 
 有一种情况会同时满足"去重成功"和"数据永远不更新"：
 
-```javascript
+```text
 if (exist !== undefined) {
   continue;   // ← 只要存在就跳过，代码看起来很"合理"
 }

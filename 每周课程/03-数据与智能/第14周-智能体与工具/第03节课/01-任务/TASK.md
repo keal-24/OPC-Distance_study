@@ -13,7 +13,7 @@
 
 上一节你把工具写成了这样：
 
-```javascript
+```text
 { type: "function", function: { name: "list_tables", description: "...", parameters: {...} } }
 ```
 
@@ -893,13 +893,13 @@ sql 是：undefined
 
 **操作：** 把 `probe.js` 里的
 
-```javascript
+```text
 if (choice.message.tool_calls) {
 ```
 
 改成
 
-```javascript
+```text
 if (choice.message.content.length > 0) {
 ```
 
