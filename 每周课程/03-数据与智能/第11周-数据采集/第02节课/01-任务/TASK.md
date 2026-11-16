@@ -2,7 +2,7 @@
 
 > 这节课结束时，你手上有：`第02节课/03-练习代码/collector/mock-server.js`（跑在 3001 端口的假数据服务）和 `collector/first-fetch.js`（能读接口、能识别 500 / 429 / 超时的脚本）。
 
-**时间**：约 120 分钟
+**建议用时**：120 分钟
 **前置**：第 71 节课填完的 `数据来源判断表.md`；会用 `fetch` 调自己第 3 周的 Express 后端
 
 ---
@@ -82,7 +82,7 @@ const data = await res.json();   // 你从不怀疑这一定是 JSON
 ## 1.2 操作
 
 ```text
-cd /d "B:\OPC-Distance_study\每周课程\03-数据与智能\第11周-数据采集\第02节课\03-练习代码"
+cd "B:\OPC-Distance_study\每周课程\03-数据与智能\第11周-数据采集\第02节课\03-练习代码"
 mkdir collector
 cd collector
 npm init -y

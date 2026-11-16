@@ -2,7 +2,7 @@
 
 > 这节课结束时，你手上有：`第07节课/03-练习代码/agent/` 里一个能自己查库的 Agent——两个工具 `list_tables` / `query_stats`，强制 LIMIT、只读连接、每轮 tool_call 写成 JSONL 日志，5 个业务问题各跑一次并留下答案。
 
-**时间**：约 120 分钟
+**建议用时**：120 分钟
 **前置**：第 97 节课做出来的 `agent.js`（带 `guardedDispatch`、权限表、确认框）
 
 ---
@@ -95,7 +95,7 @@ get_order         这一节的 5 个问题都不需要单笔详情
 ## 1.2 操作
 
 ```text
-cd /d B:\OPC-Distance_study\每周课程\03-数据与智能\第14周-智能体与工具
+cd "B:\OPC-Distance_study\每周课程\03-数据与智能\第14周-智能体与工具"
 xcopy 第06节课\03-练习代码\agent 第07节课\03-练习代码\agent /E /I
 cd 第07节课\03-练习代码\agent
 ```

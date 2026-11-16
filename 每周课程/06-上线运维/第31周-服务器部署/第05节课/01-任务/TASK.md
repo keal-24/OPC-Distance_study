@@ -62,6 +62,47 @@ node server.js
 
 ---
 
+# 开工卡：这一节在哪台机器、哪个目录做
+
+> **每节开始前先读这张卡。** 环境和你的实际情况不一致，就先解决环境，别往下看。
+
+| 问题 | 答案 |
+|---|---|
+| **在哪台机器** | **服务器。** |
+| **用哪个终端** | **Git Bash → SSH 到服务器。** |
+| **现在在哪个目录** | <code>ssh root@你的服务器IP</code><br><code>cd /srv/app</code> |
+| **本节新建什么** | `pm2-笔记.md`（放回本地 `第05节课/03-练习代码/`）<br>服务器上：一个 `online` 的 pm2 进程 + 一个 systemd 单元 |
+
+## 开工前先跑这一条
+
+确认你没站错地方：
+
+```bash
+node -v && ls node_modules 2>/dev/null | head -3 && ls -l .env
+```
+
+**应该看到：**
+
+```text
+v22.22.2
+accepts
+array-flatten
+body-parser
+-rw------- 1 root root 512 ... .env
+```
+
+**三样齐了：Node 22.x、`node_modules` 有东西、`.env` 权限 600。** 说明第 214 节的活干完了。
+
+## 如果不对
+
+**`node -v` 是 `v12` 或 `v18`** → 第 213 节装的 Node 版本不对，回去重装。
+
+**`node_modules` 是空的** → `npm ci` 没跑完，回第 214 节。
+
+**`.env` 不存在** → 先补 `.env`，不然 `pm2 start` 起来就 500。
+
+---
+
 # 第 1 步：先看清"为什么不能用 `&`"（20 分钟）
 
 ## 1.1 做个实验
@@ -332,7 +373,7 @@ which pm2
 **⚠️ 如果 `which pm2` 输出的是：**
 
 ```text
-/root/.nvm/versions/node/v20.11.1/bin/pm2
+/root/.nvm/versions/node/v22.22.2/bin/pm2
 ```
 
 **或者：**

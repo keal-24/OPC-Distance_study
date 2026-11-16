@@ -2,7 +2,7 @@
 
 > 这节课结束时，你手上有：`mm-app` 一个完整的图文助手 —— 上传图 → 识别 → 追问 → 语音播报；`out\acceptance.md`（三张图 × 两问的验收记录）；`out\cost.md`（成本账）。
 
-**时间**：约 120 分钟
+**建议用时**：120 分钟
 **前置**：第 104 节课的 `mm-app`（`lib\errors.js` / `lib\retry.js` / 错误中间件都挂好）
 
 ---
@@ -184,7 +184,7 @@ CREATE TABLE assistant_messages (
 **1.** 进项目：
 
 ```text
-cd /d "B:\OPC-Distance_study\每周课程\03-数据与智能\第15周-多模态\第07节课\03-练习代码"
+cd "B:\OPC-Distance_study\每周课程\03-数据与智能\第15周-多模态\第07节课\03-练习代码"
 xcopy /E /I /Y "..\第06节课\03-练习代码\mm-app" mm-app
 cd mm-app
 ```

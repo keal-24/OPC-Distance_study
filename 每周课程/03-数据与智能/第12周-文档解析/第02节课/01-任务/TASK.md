@@ -2,7 +2,7 @@
 
 > 这节课结束时，你手上有：`src\read-text.js`，喂给它一个 txt、md 或 docx，它返回 `{ text, encoding, title }`，GBK 和 BOM 都不会再让你看到乱码。
 
-**时间**：约 100 分钟
+**建议用时**：100 分钟
 **前置**：第 78 节课做出来的 `doc-parser\src\detect.js`
 
 ---
@@ -74,7 +74,7 @@ Windows 11 的记事本在"另存为"对话框底部有一个"编码"下拉框�
 ## 1.2 操作
 
 ```text
-cd /d B:\OPC-Distance_study\每周课程\03-数据与智能\第12周-文档解析\第02节课\03-练习代码
+cd "B:\OPC-Distance_study\每周课程\03-数据与智能\第12周-文档解析\第02节课\03-练习代码"
 xcopy "..\..\第01节课\03-练习代码\doc-parser" "doc-parser" /E /I /Y
 cd doc-parser
 npm install mammoth

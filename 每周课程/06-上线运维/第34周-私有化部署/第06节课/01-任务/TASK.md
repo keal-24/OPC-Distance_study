@@ -65,6 +65,45 @@
 
 ---
 
+# 开工卡：这一节在哪台机器、哪个目录做
+
+> **每节开始前先读这张卡。** 环境和你的实际情况不一致，就先解决环境，别往下看。
+
+| 问题 | 答案 |
+|---|---|
+| **在哪台机器** | **只有你的 Windows 电脑。** 升级和回滚脚本都在本机演练，用 `/c/opt/app` 模拟客户的安装目录。 |
+| **用哪个终端** | **Git Bash。** |
+| **现在在哪个目录** | <code>cd /c/opt/app 2>/dev/null \|\| echo "目录不存在，第 233 节没做"</code> |
+| **本节新建什么** | `/c/opt/app/scripts/upgrade.sh`<br>`/c/opt/app/scripts/rollback.sh`<br>`升级演练.md`（升级成功 + 升级失败回滚两次记录） |
+
+## 开工前先跑这一条
+
+确认你没站错地方：
+
+```bash
+ls /c/opt/app/scripts/ 2>/dev/null; echo "---"; grep APP_VERSION /c/opt/app/.env 2>/dev/null || echo "还没有 APP_VERSION"
+```
+
+**应该看到：**
+
+```text
+install.sh
+upgrade.sh
+rollback.sh
+---
+APP_VERSION=1.2.0
+```
+
+**`scripts/` 里有三个脚本，`.env` 里有版本号。** 有版本号才能谈升级和回滚。
+
+## 如果不对
+
+**`目录不存在，第 233 节没做`** → 回第 233 节建 `/c/opt/app`。
+
+**`还没有 APP_VERSION`** → 先往 `.env` 里加这一行，这一节的升级就是改这个值。
+
+---
+
 # 第 1 步：先把版本号定下来（20 分钟）
 
 ## 1.1 版本号用三段式

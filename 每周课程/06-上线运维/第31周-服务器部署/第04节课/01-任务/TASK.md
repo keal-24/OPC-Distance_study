@@ -5,7 +5,7 @@
 > 今天不启动服务，只把"代码 + 配置 + 依赖"三样摆整齐。
 
 **建议用时**：100 分钟
-**你需要先完成**：第 213 节课（`node -v` 是 20.x，`git --version` 有输出，swap 是 2G）
+**你需要先完成**：第 213 节课（`node -v` 是 22.x，`git --version` 有输出，swap 是 2G）
 
 ---
 
@@ -14,7 +14,7 @@
 ## 0.1 你现在会什么
 
 ```text
-服务器：Ubuntu 22.04 + Node 20 + git + nginx + 2G swap
+服务器：Ubuntu 22.04 + Node 22 + git + nginx + 2G swap
 本地：chat-app 代码（在 GitHub 上，.env 不在里面）
 ```
 
@@ -58,6 +58,43 @@ cd /srv/app && ls -la
 ```
 
 **能看到 `package.json`、`server.js`、`.env`（隐藏）、`node_modules/`，就对了。**
+
+---
+
+# 开工卡：这一节在哪台机器、哪个目录做
+
+> **每节开始前先读这张卡。** 环境和你的实际情况不一致，就先解决环境，别往下看。
+
+| 问题 | 答案 |
+|---|---|
+| **在哪台机器** | **服务器**（clone 代码、建 `.env`、装依赖）。 |
+| **用哪个终端** | **Git Bash → SSH 到服务器。** |
+| **现在在哪个目录** | <code>ssh root@你的服务器IP</code><br><code>cd /srv/app</code> |
+| **本节新建什么** | 服务器上：`/srv/app/` 里的项目代码、`/srv/app/.env`、`/srv/app/node_modules/`<br>本地：`上传记录.md` |
+
+## 开工前先跑这一条
+
+确认你没站错地方：
+
+```bash
+cd /srv/app && ls -la | head
+```
+
+**应该看到：**
+
+```text
+total 8
+drwxr-xr-x 2 root root 4096 ... .
+drwxr-xr-x 3 root root 4096 ... ..
+```
+
+**开工时应该是空的（只有 `.` 和 `..`）。** 这一节第 4 步才 `git clone`。
+
+## 如果不对
+
+**已经有 `chat-app/` 或 `package.json`** → 你之前做过，先 `ls` 看清，别直接覆盖（可能把上次的 `.env` 冲掉）。
+
+**`git clone` 报 `Could not resolve host`** → 服务器 DNS 有问题，`cat /etc/resolv.conf` 看有没有 `nameserver`。
 
 ---
 

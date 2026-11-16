@@ -63,6 +63,45 @@ docker logs / exec                          看日志、进容器
 
 ---
 
+# 开工卡：这一节在哪台机器、哪个目录做
+
+> **每节开始前先读这张卡。** 环境和你的实际情况不一致，就先解决环境，别往下看。
+
+| 问题 | 答案 |
+|---|---|
+| **在哪台机器** | **你的 Windows 电脑**（改代码、build 镜像）**+ 服务器**（最后验证一次，可选）。 |
+| **用哪个终端** | **Git Bash。** 查 key 用 `grep`，PowerShell 里没有这个命令。 |
+| **现在在哪个目录** | <code>cd "B:/OPC-Distance_study/每周课程/06-上线运维/第29周-Docker/第04节课/03-练习代码/chat-app-docker"</code> |
+| **本节新建什么** | `.env.example`（模板，要进 Git）<br>`.env`（真值，**不进 Git**）<br>改过的 `Dockerfile`（去掉硬编码 key） |
+
+## 开工前先跑这一条
+
+确认你没站错地方：
+
+```bash
+grep -rn "sk-" . --include="*.js" --include="*.json" --include=".env" 2>/dev/null; echo "---查完---"
+```
+
+**应该看到：**
+
+**最好什么都没有。**
+
+如果有输出，类似这样：
+
+```text
+./server.js:12:const API_KEY = "sk-xxxxxxxxxxxxxxxxxxxxxxxx"
+```
+
+**那就是硬编码，正是今天要改的东西。有输出是正常的，别慌。**
+
+## 如果不对
+
+**报 `grep: command not found`** → 你在 PowerShell 里，换 Git Bash。
+
+**报 `No such file or directory`** → `chat-app-docker` 不在，回第 2 节。
+
+---
+
 # 第 1 步：先看你的 key 现在在哪（15 分钟）
 
 ## 1.1 搜一遍整个项目
@@ -254,7 +293,7 @@ docker exec chat-app env
 ```text
 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 HOSTNAME=8f3a2b1c9d4e
-NODE_VERSION=20.18.0
+NODE_VERSION=22.22.2
 NODE_ENV=production
 OPENAI_API_KEY=sk-test-123456
 OPENAI_BASE_URL=https://api.example.com/v1
@@ -265,7 +304,7 @@ HOME=/root
 
 | 行 | 从哪来的 |
 |---|---|
-| `NODE_VERSION=20.18.0` | **基础镜像 `node:20-alpine` 自带的** |
+| `NODE_VERSION=22.22.2` | **基础镜像 `node:22-alpine` 自带的** |
 | `NODE_ENV=production` | **你 Dockerfile 里 `ENV` 设的** |
 | `OPENAI_API_KEY=...` | **你刚才 `-e` 传的** |
 | `HOSTNAME=8f3a...` | Docker 自动设的（容器 ID 前 12 位） |
@@ -784,7 +823,7 @@ docker inspect --format '{{json .Config.Env}}' chat-app
 **输出：**
 
 ```text
-["PATH=/usr/local/sbin:...","NODE_VERSION=20.18.0","NODE_ENV=production","OPENAI_API_KEY=sk-xxxxxxxxxxxxxxxx","OPENAI_BASE_URL=https://api.example.com/v1","HOME=/root"]
+["PATH=/usr/local/sbin:...","NODE_VERSION=22.22.2","NODE_ENV=production","OPENAI_API_KEY=sk-xxxxxxxxxxxxxxxx","OPENAI_BASE_URL=https://api.example.com/v1","HOME=/root"]
 ```
 
 **你的 key 明文在里面。**

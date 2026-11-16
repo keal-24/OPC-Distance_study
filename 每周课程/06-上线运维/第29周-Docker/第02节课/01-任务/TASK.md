@@ -56,6 +56,43 @@ docker images              看本地有什么镜像
 
 ---
 
+# 开工卡：这一节在哪台机器、哪个目录做
+
+> **每节开始前先读这张卡。** 环境和你的实际情况不一致，就先解决环境，别往下看。
+
+| 问题 | 答案 |
+|---|---|
+| **在哪台机器** | **你的 Windows 电脑。** 文件操作都在本地。 |
+| **用哪个终端** | **Git Bash。** 要跑 `docker build`，PowerShell 里路径和引号写法容易出错。 |
+| **现在在哪个目录** | **这一节的工作目录是复制出来的项目副本，不是你原项目：**<br><code>cd "B:/OPC-Distance_study/每周课程/06-上线运维/第29周-Docker/第02节课/03-练习代码"</code><br>第 1 步会让你把 `chat-app` 复制进来命名 `chat-app-docker`，**后面所有命令都在 `chat-app-docker/` 里跑。** |
+| **本节新建什么** | `chat-app-docker/`（从你的 `chat-app` 复制来的整份项目）<br>`chat-app-docker/Dockerfile`<br>`chat-app-docker/.dockerignore` |
+
+## 开工前先跑这一条
+
+确认你没站错地方：
+
+```bash
+ls
+```
+
+**应该看到：**
+
+**开工时应该是空的**，或者只有一份 `说明.md`：
+
+```text
+说明.md
+```
+
+**空的是对的。** 第 1 步就是让你在这里新建 `chat-app-docker/`。
+
+## 如果不对
+
+**看到一堆 js 文件** → 你在原项目目录里，跑回课程目录。
+
+**看到 `Dockerfile` 已经存在** → 你之前做过了，先 `mv chat-app-docker chat-app-docker.bak` 再重做。
+
+---
+
 # 第 1 步：先复制一份项目（15 分钟）
 
 ## 1.1 为什么不在原项目上改
@@ -338,7 +375,7 @@ docker run --rm chat-app:1.0 ls -a /app
 **内容：**
 
 ```dockerfile
-FROM node:20
+FROM node:22
 
 WORKDIR /app
 
@@ -365,10 +402,10 @@ docker build -t chat-app:1.0 .
 [+] Building 38.4s (9/9) FINISHED                                    docker:desktop-linux
  => [internal] load build definition from Dockerfile                                0.0s
  => => transferring dockerfile: 132B                                                0.0s
- => [internal] load metadata for docker.io/library/node:20                          2.1s
+ => [internal] load metadata for docker.io/library/node:22                          2.1s
  => [internal] load .dockerignore                                                   0.0s
  => => transferring context: 108B                                                   0.0s
- => [1/4] FROM docker.io/library/node:20@sha256:3f4c1a...                         12.4s
+ => [1/4] FROM docker.io/library/node:22@sha256:3f4c1a...                         12.4s
  => [internal] load build context                                                   3.8s
  => => transferring context: 2.41MB                                                 3.8s
  => [2/4] WORKDIR /app                                                              0.1s
@@ -386,9 +423,9 @@ docker build -t chat-app:1.0 .
 |---|---|
 | `[+] Building 38.4s (9/9) FINISHED` | 一共 9 个步骤，全做完了，花了 38 秒 |
 | `load build definition from Dockerfile` | 读你的 Dockerfile |
-| `load metadata for docker.io/library/node:20` | 查 `node:20` 这个镜像的最新信息 |
+| `load metadata for docker.io/library/node:22` | 查 `node:22` 这个镜像的最新信息 |
 | `load .dockerignore` | **读 `.dockerignore`，证明它生效了** |
-| `[1/4] FROM node:20` | 第一步：拉基础镜像。**这一步就花了 12 秒 + 1.1GB** |
+| `[1/4] FROM node:22` | 第一步：拉基础镜像。**这一步就花了 12 秒 + 1.1GB** |
 | `load build context ... transferring context: 2.41MB` | 把当前目录打包送过去。**2.41MB，说明 `.dockerignore` 起作用了** |
 | `[2/4] WORKDIR /app` | 创建并进入 `/app` 目录 |
 | `[3/4] COPY . .` | 把上下文里的所有文件复制进 `/app` |
@@ -400,7 +437,7 @@ docker build -t chat-app:1.0 .
 
 ```text
 transferring context: 2.41MB    ← 如果这里是 312MB，说明 .dockerignore 没生效
-[1/4] FROM node:20 ... 12.4s    ← 1.1GB 的基础镜像，每次新机器都要拉
+[1/4] FROM node:22 ... 12.4s    ← 1.1GB 的基础镜像，每次新机器都要拉
 ```
 
 **（`2.41MB` 和 `12.4s` 是我的数字，你的会不一样。这个数会变。）**
@@ -464,7 +501,7 @@ docker rm -f chat-app-1
 **它能跑，但有三处要改：**
 
 ```text
-① 基础镜像 node:20 是 1.1GB。换个小的能省 900MB
+① 基础镜像 node:22 是 1.1GB。换个小的能省 900MB
 ② COPY . . 放在 npm install 前面 —— 改一行代码，依赖全部重装
 ③ npm install 不保证版本一致 —— 应该用 npm ci
 ```
@@ -490,7 +527,7 @@ IMAGE          CREATED          CREATED BY                                      
 <missing>      2 minutes ago    COPY . . # buildkit                             1.8MB     buildkit.dockerfile.v0
 <missing>      2 minutes ago    WORKDIR /app                                    0B        buildkit.dockerfile.v0
 <missing>      2 minutes ago    /bin/sh -c #(nop)  CMD ["node"]                 0B
-<missing>      2 minutes ago    /bin/sh -c #(nop)  ENV NODE_VERSION=20.18.0     0B
+<missing>      2 minutes ago    /bin/sh -c #(nop)  ENV NODE_VERSION=22.22.2     0B
 ...
 <missing>      2 weeks ago      /bin/sh -c set -eux;  apk add --no-cache ...    52.3MB
 ```
@@ -508,7 +545,7 @@ IMAGE          CREATED          CREATED BY                                      
 
 ```text
 你写的 5 条指令 → 5 层
-基础镜像 node:20 自己还有十几层
+基础镜像 node:22 自己还有十几层
 ```
 
 **每一层都是"在上层基础上叠加的改动"，不是完整拷贝。**
@@ -531,7 +568,7 @@ IMAGE          CREATED          CREATED BY                                      
 [+] Building 22.7s (10/10) FINISHED
  => [internal] load build definition from Dockerfile                                0.0s
  => [internal] load .dockerignore                                                   0.0s
- => [1/4] FROM docker.io/library/node:20@sha256:3f4c1a...                           0.0s
+ => [1/4] FROM docker.io/library/node:22@sha256:3f4c1a...                           0.0s
  => CACHED [2/4] WORKDIR /app                                                       0.0s
  => [internal] load build context                                                   0.6s
  => => transferring context: 2.41MB                                                 0.5s
@@ -565,7 +602,7 @@ IMAGE          CREATED          CREATED BY                                      
 **把 Dockerfile 改成：**
 
 ```dockerfile
-FROM node:20
+FROM node:22
 
 WORKDIR /app
 
@@ -700,7 +737,7 @@ docker build --progress=plain -t chat-app:1.3 .
 **把 `chat-app-docker/Dockerfile` 整个替换成：**
 
 ```dockerfile
-FROM node:20-alpine
+FROM node:22-alpine
 
 WORKDIR /app
 
@@ -722,7 +759,7 @@ CMD ["node", "server.js"]
 
 | 行 | 干什么 | 为什么这么写 |
 |---|---|---|
-| `FROM node:20-alpine` | 基础镜像 | `alpine` 版约 130MB，完整版约 1.1GB |
+| `FROM node:22-alpine` | 基础镜像 | `alpine` 版约 130MB，完整版约 1.1GB |
 | `WORKDIR /app` | 设工作目录 | 之后所有命令都在 `/app` 里执行；目录不存在会自动建 |
 | `ENV NODE_ENV=production` | 设环境变量 | 让 Express 等库走生产模式（关掉调试） |
 | `COPY package*.json ./` | **先只拷依赖清单** | 这是缓存的关键 |
@@ -785,7 +822,7 @@ devDependencies 里是 nodemon、eslint、prettier 这些
 
 **注意：** 如果你的项目把 `express` 之类放错了位置（放进了 `devDependencies`），`--omit=dev` 之后容器会报 `Cannot find module 'express'`。**去 `package.json` 里确认所有运行时要用的包都在 `dependencies` 里。**
 
-**老版本 npm 的写法是 `--production`，npm 8 之后推荐 `--omit=dev`。** 你的 Node 20 自带 npm 10，用新写法。
+**老版本 npm 的写法是 `--production`，npm 8 之后推荐 `--omit=dev`。** 你的 Node 22 自带 npm 10，用新写法。
 
 ## 5.4 换 npm 源那一行
 
@@ -824,7 +861,7 @@ RUN npm ci --omit=dev --registry=$NPM_REGISTRY
 docker build -t chat-app:2.0 .
 ```
 
-**注意第一次会因为基础镜像从 `node:20` 换成 `node:20-alpine` 而重新拉（约 130MB，比 1.1GB 快得多）。**
+**注意第一次会因为基础镜像从 `node:22` 换成 `node:22-alpine` 而重新拉（约 130MB，比 1.1GB 快得多）。**
 
 **应该看到最后：**
 
@@ -850,8 +887,8 @@ chat-app     1.2       9f8e7d6c5b4a   20 minutes ago   1.24GB
 
 | 镜像 | 大小 | 差在哪 |
 |---|---|---|
-| `chat-app:1.2` | 1.24GB | `node:20` 完整版（含完整 Debian + 编译工具链） |
-| `chat-app:2.0` | 178MB | `node:20-alpine` + 不装开发依赖 |
+| `chat-app:1.2` | 1.24GB | `node:22` 完整版（含完整 Debian + 编译工具链） |
+| `chat-app:2.0` | 178MB | `node:22-alpine` + 不装开发依赖 |
 
 **省了 1GB。** 这个差别在 CI 里就是"每次构建少拉 1GB"。
 
@@ -908,12 +945,12 @@ Error: Error loading shared library ld-linux-x86-64.so.2: No such file or direct
 **三种解法：**
 
 ```text
-① 换 node:20-slim（Debian 精简版，约 200MB，兼容性好）
+① 换 node:22-slim（Debian 精简版，约 200MB，兼容性好）
 ② 在 alpine 里装编译工具（镜像会变大，白折腾）
 ③ 确认这个包有没有 musl 的预编译版本（看它的文档）
 ```
 
-**如果你的项目用了上面那几个包，直接换 `node:20-slim`。**
+**如果你的项目用了上面那几个包，直接换 `node:22-slim`。**
 
 **这就是第 197 节课练习二里说的"alpine 会咬你一口"。**
 
@@ -999,7 +1036,7 @@ docker run --rm chat-app:2.1 ls -a /app
 **操作：** 把 Dockerfile 改成：
 
 ```dockerfile
-FROM node:20-alpine
+FROM node:22-alpine
 
 WORKDIR /app
 
@@ -1061,7 +1098,7 @@ docker build -t chat-app:wrong ./chat-app-docker
 ```text
 [+] Building 1.2s (6/6) FINISHED
  => [internal] load build definition from Dockerfile                                0.0s
- => [1/5] FROM docker.io/library/node:20-alpine                                     0.0s
+ => [1/5] FROM docker.io/library/node:22-alpine                                     0.0s
  => [2/5] WORKDIR /app                                                              0.0s
  => ERROR [3/5] COPY package*.json ./                                               0.0s
 ------
@@ -1145,7 +1182,7 @@ Error: Cannot find module '/app/server.js'
   requireStack: []
 }
 
-Node.js v20.18.0
+Node.js v22.22.2
 ```
 
 **逐行读：**
@@ -1155,7 +1192,7 @@ Node.js v20.18.0
 | `Error: Cannot find module '/app/server.js'` | **在 `/app` 里找不到 `server.js`** |
 | `code: 'MODULE_NOT_FOUND'` | Node 的标准"文件不存在"错误码 |
 | `requireStack: []` | 没有调用栈，因为是入口文件 |
-| `Node.js v20.18.0` | 容器里的 Node 版本 |
+| `Node.js v22.22.2` | 容器里的 Node 版本 |
 
 **为什么：**
 
@@ -1323,8 +1360,17 @@ open Dockerfile: no such file or directory
 
 **怎么修：**
 
+**（注意：这一步假设你现在在 `第02节课/` 目录里 —— 那是上面故意犯错的位置。修完之后要回到 `03-练习代码/chat-app-docker` 再继续往下做。）**
+
 ```bash
 cd 03-练习代码/chat-app-docker
+docker build -t chat-app:3.0 .
+```
+
+**如果上面这条 `cd` 报 `No such file or directory`，说明你已经站在 `03-练习代码/` 里了（开工卡带你进来的位置），那直接用绝对路径最稳：**
+
+```bash
+cd "B:/OPC-Distance_study/每周课程/06-上线运维/第29周-Docker/第02节课/03-练习代码/chat-app-docker"
 docker build -t chat-app:3.0 .
 ```
 
@@ -1372,14 +1418,14 @@ chat-app-docker                 但上下文是这个目录
 
 **要求：**
 
-1. 现在你的 Dockerfile 是 `FROM node:20-alpine`；
+1. 现在你的 Dockerfile 是 `FROM node:22-alpine`；
 2. 去 Docker Hub 查 `node` 这个镜像有哪些 tag（搜 `node alpine`）；
-3. 挑一个具体版本，比如 `node:20.18.0-alpine`，写进去；
+3. 挑一个具体版本，比如 `node:22.22.2-alpine`，写进去；
 4. 重新 build。
 
 **记录：** 两个 tag 拉下来的镜像大小一样吗？build 时间有变化吗？
 
-**思考：为什么生产环境要写具体版本？如果 `node:20-alpine` 半年后指向了 Node 20.25，你的项目会不会挂？**
+**思考：为什么生产环境要写具体版本？如果 `node:22-alpine` 半年后指向了 Node 22.30，你的项目会不会挂？**
 
 ## 练习二：测量缓存带来的时间差
 
@@ -1424,7 +1470,7 @@ chat-app-docker                 但上下文是这个目录
 
 **记录：** 每一层的编号、指令、耗时。
 
-**思考：`FROM node:20-alpine` 这一层为什么耗时 0 秒（第二次 build 时）？它去哪了？**
+**思考：`FROM node:22-alpine` 这一层为什么耗时 0 秒（第二次 build 时）？它去哪了？**
 
 ## 练习五：给你的项目加一条健康检查命令
 
@@ -1505,8 +1551,8 @@ chat-app-docker                 但上下文是这个目录
 | `Cannot find module '/app/xxx.js'` | `CMD` 路径不对 | `docker run --rm 镜像 ls /app` 看实际结构 |
 | `Error: Cannot find module 'express'` | 依赖被 `--omit=dev` 排掉了 | 确认 express 在 `dependencies` 里 |
 | `invalid reference format` | 镜像名有大写 | 全小写 |
-| `gyp ERR! find Python` | alpine 上装原生模块 | 换 `node:20-slim` |
-| `Error loading shared library ld-linux-x86-64.so.2` | 原生模块在 alpine 上跑不起来 | 换 `node:20-slim` |
+| `gyp ERR! find Python` | alpine 上装原生模块 | 换 `node:22-slim` |
+| `Error loading shared library ld-linux-x86-64.so.2` | 原生模块在 alpine 上跑不起来 | 换 `node:22-slim` |
 | 容器起来就退出，`Exited (1)` | 程序自己报错 | `docker logs <容器>` |
 | `docker logs` 什么都没有 | 程序还没输出就崩了 | `docker run --rm 镜像 node server.js` 前台跑看输出 |
 | 页面打不开，但容器 `Up` | 监听在 `127.0.0.1`，或端口映射错 | 改成监听 `0.0.0.0`；检查 `-p` |

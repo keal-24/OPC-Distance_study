@@ -2,7 +2,7 @@
 
 > 这节课结束时，你手上有：`collector\run-once.js`（跑一次采集，无论如何都留一行运行记录）、`collector\runs.sql`（运行记录表）、`collector\cron.js`（每 2 分钟自动跑一次）、`collector\show-runs.js`（打印最近几次运行，一眼看出哪次失败、失败在第几步），以及 `collector\data\runs-report.md`。
 
-**时间**：约 115 分钟
+**建议用时**：115 分钟
 **前置**：第 76 节课的 `collector\upsert.js` 和 `data\app.db`（30 条，可反复跑）
 
 ---
@@ -118,7 +118,7 @@ node upsert.js
 **1.** 复制上一节的项目：
 
 ```text
-cd /d "B:\OPC-Distance_study\每周课程\03-数据与智能\第11周-数据采集\第07节课\03-练习代码"
+cd "B:\OPC-Distance_study\每周课程\03-数据与智能\第11周-数据采集\第07节课\03-练习代码"
 xcopy /E /I /Y "..\第06节课\03-练习代码\collector" collector
 cd collector
 del dedup-compare.js url-trap.js wrong-replace.js wrong-hash.js wrong-skip.js wrong-tx.js peek.js

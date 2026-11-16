@@ -2,7 +2,7 @@
 
 > 这节课结束时，你手上有：`第05节课/03-练习代码/agent/agent.js`，一个最多跑 8 轮的循环，每轮打印"模型想干什么 → 实际返回什么"，停止时说出原因；外加三种死循环的复现脚本 `run-faults.js`。
 
-**时间**：约 120 分钟
+**建议用时**：120 分钟
 **前置**：第 95 节课做出来的 `dispatch.js` 和 `single-step.js`（一轮能跑通，messages 是 4 条）
 
 ---
@@ -88,7 +88,7 @@
 ## 1.2 操作
 
 ```text
-cd /d B:\OPC-Distance_study\每周课程\03-数据与智能\第14周-智能体与工具
+cd "B:\OPC-Distance_study\每周课程\03-数据与智能\第14周-智能体与工具"
 xcopy 第04节课\03-练习代码\agent 第05节课\03-练习代码\agent /E /I
 cd 第05节课\03-练习代码\agent
 node single-step.js 这个月卖了多少

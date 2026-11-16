@@ -4,7 +4,8 @@
 > 上节课把"收事件"跑通了，但只针对飞书。这节课把这件事抽象出来：**验签、幂等、重试、留档——四件套，套到任何平台都能用。**
 > 而且要做一件上节课没做的事：**加密模式**。真实平台默认开加密，不解密你就拿不到事件内容。
 
-**建议用时**：150 分钟
+**建议用时**：165 分钟（6 个步骤，含动手敲代码的时间）
+**时间怎么排**：一次做不完是正常的。建议分两次：第 0—2 步（90 分钟）一次，第 3—5 步（75 分钟）一次。每个步骤标题后面的括号就是该步的分钟数。
 **你需要先完成**：第 178 节课（事件能收、worker 能跑、重放不重复）
 
 ---
@@ -1102,15 +1103,32 @@ async function tick(limit = 10) {
   running = true;
 
   try {
+    // 先把卡在 processing 超过 10 分钟的收回来
     await reclaimStuck(10);
 
+    // 再认领一批（claimBatch 是第 178 节写的，行为没变）
     const rows = await claimBatch(limit);
-    ...
+
+    if (rows.length === 0) return { processed: 0 };
+
+    const results = [];
+
+    for (const row of rows) {
+      results.push(await processOne(row));
+    }
+
+    return { processed: results.length, results };
   } finally {
-    running = false;
+    running = false;   // ← 放 finally，任何异常都解锁
   }
 }
 ```
+
+**`reclaimStuck` 放在 `claimBatch` 之前，顺序不能反。**
+
+**先认领再回收的话，刚认领的那一批 `received_at` 是刚刚，回收逻辑不会动它——看起来没事。**
+
+**但如果有 20 条已经卡了 10 分钟的，它们会一直排在队头没被收回来，而 `claimBatch` 只取 `status in ('pending','failed')`，`processing` 的根本不在范围内。** **结果是队列里看起来"空了"，实际有 20 条僵尸卡着。**
 
 ## 4.2 死信告警
 
@@ -1289,13 +1307,26 @@ curl -X POST http://localhost:5000/mock/push-event -H "Content-Type: application
 **盯日志 3 分钟。你会看到：**
 
 ```text
-[handler] ...（第一次失败）
-（10 秒后）
-（第二次失败）
-（20 秒后）
-（第三次）
-（40 秒后）
-...
+[worker] 处理失败 {"id":"...","attempts":1}      ← 推下去立刻
+（等 10 秒）
+[worker] 处理失败 {"id":"...","attempts":2}
+（等 20 秒）
+[worker] 处理失败 {"id":"...","attempts":3}
+（等 40 秒）
+[worker] 处理失败 {"id":"...","attempts":4}
+（等 80 秒）
+[worker] 处理失败 {"id":"...","attempts":5}
+[alert] 连续失败 5 次，已标记 failed_permanently
+```
+
+**一共 5 次，间隔 10 / 20 / 40 / 80 秒，加起来 150 秒——所以 3 分钟刚好够看完。**
+
+**如果你只看到 1 次就没了，看下面三条：**
+
+```text
+① 一眼都不等就有第 2 次 → next_retry_at 没写进去，退避函数返回了 0
+② 永远只有 1 次          → attempts 没累加，MAX_ATTEMPTS 永远不满足
+③ 一直重试不停          → MAX_ATTEMPTS 判断写成了 < 而该是 >=
 ```
 
 **查数据库：**

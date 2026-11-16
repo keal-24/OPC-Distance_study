@@ -2,7 +2,7 @@
 
 > 这节课结束时，你手上有：`src\read-pdf.js`，能把一个多页 PDF 按页取出文本，去掉页眉页脚和页码，把被硬断的行接回去，并且判断出"这是文字版还是扫描版"。
 
-**时间**：约 110 分钟
+**建议用时**：110 分钟
 **前置**：第 80 节课做出来的 `src\read-table.js`，以及 `decodeBuffer()`
 
 ---
@@ -83,7 +83,7 @@ PDF 不是。**PDF 里没有"段落"这个词。**
 ## 1.2 操作
 
 ```text
-cd /d B:\OPC-Distance_study\每周课程\03-数据与智能\第12周-文档解析\第04节课\03-练习代码
+cd "B:\OPC-Distance_study\每周课程\03-数据与智能\第12周-文档解析\第04节课\03-练习代码"
 xcopy "..\..\第03节课\03-练习代码\doc-parser" "doc-parser" /E /I /Y
 cd doc-parser
 npm install pdf-parse

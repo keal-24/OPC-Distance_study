@@ -762,7 +762,7 @@ export const estimateTokens = (text) => {
 
 **两个都要。**
 
-**`AbortSignal.any` 是 Node 20 的新 API。低版本没有，检查 `node -v`。**
+**`AbortSignal.any` 是 Node 22 的新 API。低版本没有，检查 `node -v`。**
 
 ### 设计二：`estimated: !usage`
 

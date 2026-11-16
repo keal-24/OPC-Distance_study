@@ -63,6 +63,45 @@ compose.yaml + up -d                 app + postgres 一起起
 
 ---
 
+# 开工卡：这一节在哪台机器、哪个目录做
+
+> **每节开始前先读这张卡。** 环境和你的实际情况不一致，就先解决环境，别往下看。
+
+| 问题 | 答案 |
+|---|---|
+| **在哪台机器** | **你的 Windows 电脑。** 这一节是整周收口，全部在本地交付。 |
+| **用哪个终端** | **Git Bash。** |
+| **现在在哪个目录** | <code>cd "B:/OPC-Distance_study/每周课程/06-上线运维/第29周-Docker/第07节课/03-练习代码"</code><br>这一节会在 `chat-stack/`（第 6 节建的）和 `chat-app-docker/`（第 2 节建的）之间来回切。**每条命令前面都写清在哪个目录。** |
+| **本节新建什么** | `chat-stack/compose.yaml`（最终版，带版本 tag）<br>`chat-stack/smoke.sh`（五条冒烟检查）<br>`瘦身记录.md`、`命令记录.md` |
+
+## 开工前先跑这一条
+
+确认你没站错地方：
+
+```bash
+docker images | grep chat-app; echo "---"; ls ../第06节课/03-练习代码/chat-stack/ 2>/dev/null || echo "chat-stack 还没建"
+```
+
+**应该看到：**
+
+```text
+chat-app   1.0   8a1b2c3d4e5f   3 days ago   1.24GB
+chat-app   2.0   9c3d4e5f6a7b   2 days ago   178MB
+---
+compose.yaml
+.env
+```
+
+**两个镜像都要在。** 这一节要做瘦身前后的对比，缺了基线就没法比。
+
+## 如果不对
+
+**只有一个镜像** → 缺基线，回第 2 节重新 build 一个不优化的 `chat-app:1.0`。
+
+**`chat-stack 还没建`** → 第 6 节没做，回去补。
+
+---
+
 # 第 1 步：先体检，量出现在多大（15 分钟）
 
 ## 1.1 看镜像
@@ -117,7 +156,7 @@ docker history chat-app:4.0 --format "{{.Size}}\t{{.CreatedBy}}" | head -15
 
 | 层 | 大小 | 是什么 |
 |---|---|---|
-| `ADD file:...` | **138MB** | **基础镜像 `node:20-alpine` 本身** |
+| `ADD file:...` | **138MB** | **基础镜像 `node:22-alpine` 本身** |
 | `WORKDIR /app` | 0B | 只改元数据，不占空间 |
 | `ENV` | 0B | 同上 |
 | `COPY package*.json` | 1.2MB | 两个 json 文件 |
@@ -138,15 +177,15 @@ docker history chat-app:4.0 --format "{{.Size}}\t{{.CreatedBy}}" | head -15
 **把数字写进笔记：**
 
 ```text
-chat-app:1.0   1.24GB      基础镜像 node:20（完整 Debian）
-chat-app:4.0   183MB       基础镜像 node:20-alpine + npm ci --omit=dev
+chat-app:1.0   1.24GB      基础镜像 node:22（完整 Debian）
+chat-app:4.0   183MB       基础镜像 node:22-alpine + npm ci --omit=dev
 今天目标       < 200MB
 ```
 
 **1.24GB → 183MB 已经省了 85%。** 主要靠两件事：
 
 ```text
-① node:20 → node:20-alpine
+① node:22 → node:22-alpine
 ② npm install → npm ci --omit=dev
 ```
 
@@ -192,7 +231,7 @@ chat-app:4.0   183MB       基础镜像 node:20-alpine + npm ci --omit=dev
 **单阶段版本：**
 
 ```dockerfile
-FROM node:20-alpine
+FROM node:22-alpine
 
 WORKDIR /app
 
@@ -214,7 +253,7 @@ CMD ["node", "server.js"]
 
 ```dockerfile
 # ---------- 阶段 1：构建 ----------
-FROM node:20-alpine AS builder
+FROM node:22-alpine AS builder
 
 WORKDIR /app
 
@@ -226,7 +265,7 @@ RUN npm config set registry https://registry.npmmirror.com \
  && npm ci --omit=dev
 
 # ---------- 阶段 2：运行 ----------
-FROM node:20-alpine AS runtime
+FROM node:22-alpine AS runtime
 
 WORKDIR /app
 
@@ -244,10 +283,10 @@ CMD ["node", "server.js"]
 
 | 行 | 意思 | 为什么 |
 |---|---|---|
-| `FROM node:20-alpine AS builder` | 阶段 1，**起名叫 `builder`** | 名字给 `COPY --from` 用 |
+| `FROM node:22-alpine AS builder` | 阶段 1，**起名叫 `builder`** | 名字给 `COPY --from` 用 |
 | `RUN apk add python3 make g++` | 装编译工具 | **这些只存在于阶段 1** |
 | `RUN npm ci --omit=dev` | 装依赖（会编译原生模块） | 编译发生在阶段 1 |
-| `FROM node:20-alpine AS runtime` | **重新从干净的基础镜像开始** | 前面装的东西全部丢掉 |
+| `FROM node:22-alpine AS runtime` | **重新从干净的基础镜像开始** | 前面装的东西全部丢掉 |
 | `COPY --from=builder /app/node_modules ./node_modules` | **只拿依赖** | 依赖是编译好的成品 |
 | `COPY . .` | 拿源码 | 从构建上下文拿，不是从阶段 1 |
 | `CMD` | 启动 | 同前 |
@@ -302,7 +341,7 @@ chat-app   5.0   b6c7d8e9f0a1   5 seconds ago   184MB
 
 ```dockerfile
 # ---------- 阶段 1：构建前端 ----------
-FROM node:20-alpine AS frontend
+FROM node:22-alpine AS frontend
 
 WORKDIR /build
 
@@ -313,7 +352,7 @@ COPY . .
 RUN npm run build
 
 # ---------- 阶段 2：运行 ----------
-FROM node:20-alpine
+FROM node:22-alpine
 
 WORKDIR /app
 
@@ -369,7 +408,7 @@ curl -i http://localhost:3000
 
 | # | 做法 | 典型省下 | 代价 |
 |---|---|---|---|
-| 1 | `node:20` → `node:20-alpine` | **约 1GB** | 可能踩 `musl` 的坑 |
+| 1 | `node:22` → `node:22-alpine` | **约 1GB** | 可能踩 `musl` 的坑 |
 | 2 | `npm install` → `npm ci --omit=dev` | 50—100MB | 需要 lock 文件 |
 | 3 | `.dockerignore` 排除 `node_modules`/`.git`/`data` | 50—500MB | 无 |
 | 4 | 多阶段构建 | 100—300MB | Dockerfile 变长 |
@@ -412,15 +451,15 @@ RUN npm config set registry https://registry.npmmirror.com \
 ## 3.3 第 6 条：固定版本
 
 ```dockerfile
-❌ FROM node:20-alpine
-✅ FROM node:20.18.0-alpine
+❌ FROM node:22-alpine
+✅ FROM node:22.22.2-alpine
 ```
 
 **为什么：**
 
 ```text
-node:20-alpine 是一个"会动的标签"
-明年它可能指向 Node 20.30，基础镜像大了 30MB，或者 alpine 版本变了
+node:22-alpine 是一个"会动的标签"
+明年它可能指向 Node 22.30，基础镜像大了 30MB，或者 alpine 版本变了
 你没改任何东西，镜像就变了
 ```
 
@@ -445,9 +484,9 @@ node:20-alpine 是一个"会动的标签"
 
 | 镜像 | 大小 |
 |---|---|
-| `node:20` | ~1.1GB |
-| `node:20-slim` | ~200MB |
-| `node:20-alpine` | ~140MB |
+| `node:22` | ~1.1GB |
+| `node:22-slim` | ~200MB |
+| `node:22-alpine` | ~140MB |
 | 你的应用（alpine + 依赖 + 代码） | ~180MB |
 
 **再往下压 20MB，收益远小于你花的时间。**
@@ -603,7 +642,7 @@ volumes:
 
 **`app.healthcheck` 里的 `wget`：**
 
-**`node:20-alpine` 自带 `wget`（busybox 提供），但没有 `curl`。**
+**`node:22-alpine` 自带 `wget`（busybox 提供），但没有 `curl`。**
 
 ```text
 ✅ wget -qO- http://localhost:3000/health
@@ -1165,9 +1204,9 @@ docker compose up -d --build
 **操作：**
 
 ```dockerfile
-FROM node:20-alpine AS builder
+FROM node:22-alpine AS builder
 ...
-FROM node:20-alpine AS runtime
+FROM node:22-alpine AS runtime
 COPY --from=build /app/node_modules ./node_modules
 ```
 
@@ -1211,8 +1250,8 @@ grep -n "FROM" Dockerfile
 ```
 
 ```text
-1:FROM node:20-alpine AS builder
-15:FROM node:20-alpine AS runtime
+1:FROM node:22-alpine AS builder
+15:FROM node:22-alpine AS runtime
 ```
 
 **阶段名是 `builder`。**
@@ -1230,12 +1269,12 @@ COPY --from=builder /app/node_modules ./node_modules
 **操作：**
 
 ```dockerfile
-FROM node:20-alpine AS builder
+FROM node:22-alpine AS builder
 WORKDIR /app
 COPY package*.json ./
 RUN npm ci --omit=dev
 
-FROM node:20-alpine AS runtime
+FROM node:22-alpine AS runtime
 WORKDIR /app
 COPY . .
 CMD ["node", "server.js"]
@@ -1258,7 +1297,7 @@ Error: Cannot find module 'express'
 Require stack:
 - /app/server.js
 
-Node.js v20.18.0
+Node.js v22.22.2
 ```
 
 **逐行读：**
@@ -1267,7 +1306,7 @@ Node.js v20.18.0
 |---|---|
 | `Cannot find module 'express'` | 找不到 express |
 | `Require stack: - /app/server.js` | 是 `/app/server.js` 要的 |
-| `Node.js v20.18.0` | 容器里的 Node |
+| `Node.js v22.22.2` | 容器里的 Node |
 
 **为什么：**
 
@@ -1313,7 +1352,7 @@ Require stack:
 - /app/db.js
 - /app/server.js
 
-Node.js v20.18.0
+Node.js v22.22.2
 ```
 
 **为什么：**
@@ -1456,7 +1495,7 @@ docker inspect --format '{{json .State.Health}}' chat-app
 
 **为什么：**
 
-`node:20-alpine` 基于 alpine，只带 busybox 的 `wget`，没有 `curl`。
+`node:22-alpine` 基于 alpine，只带 busybox 的 `wget`，没有 `curl`。
 
 **怎么查你的镜像里有什么：**
 
@@ -1673,7 +1712,7 @@ local     chat-stack_pg-data     ← 新卷（空的）
 ```text
 | 改动 | 镜像大小 | 省了多少 |
 |---|---|---|
-| 初始（node:20 + npm install） | | |
+| 初始（node:22 + npm install） | | |
 | 换 alpine | | |
 | 换 npm ci --omit=dev | | |
 | 加 .dockerignore | | |

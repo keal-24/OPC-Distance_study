@@ -4,7 +4,8 @@
 > 前面四节都是"接收"。这节课第一次做"交互"：**客户在群里看一张卡片，点一个按钮，事情就办完了——他一次都不用打开你的系统。**
 > 这是平台集成里唯一能直接提升"客户愿不愿意付钱"的部分。
 
-**建议用时**：150 分钟
+**建议用时**：190 分钟（7 个步骤，含动手敲代码的时间）
+**时间怎么排**：一次做不完是正常的。建议分两次：第 0—2 步（85 分钟）一次，第 3—6 步（105 分钟）一次。每个步骤标题后面的括号就是该步的分钟数。
 **你需要先完成**：第 179 节（四件套跑通，加密模式能处理，重试能验证）
 
 ---
@@ -1238,38 +1239,60 @@ curl -X POST http://localhost:5000/mock/click-button -H "Content-Type: applicati
 
 **这违反"先应答后处理"的原则，但对于"快操作 + 需要即时反馈"的场景是对的。**
 
-**在 `createWebhookReceiver` 里加一个选项：**
+**在 `createWebhookReceiver` 里加一个选项。**
+
+**改 `src/webhook/receiver.js`。三处。**
+
+**第一处：`createWebhookReceiver(adapters, options = {})` 函数体开头，解构里加 `fastPath`：**
 
 ```js
-const { fastPath } = options;
-
-// ...
-
-if (fastPath && fastPath.match(parsed, verified)) {
-  try {
-    const result = await fastPath.handle({ parsed, verified, rawBody });
-    log('fastPath 处理完成');
-    return res.status(200).json(result || { ok: true });
-  } catch (err) {
-    log('fastPath 失败', { error: err.message });
-    return res.status(200).json({ ok: true, deferred: true });
-  }
-}
+  const { fastPath = null } = options;
 ```
+
+**第二处：在"验签通过、归一化之前"插入这一段（也就是 `if (!verified.ok) { ... }` 之后、`const body = req.body || {};` 之前）：**
+
+```js
+  if (fastPath && fastPath.match(body, verified)) {
+    try {
+      const result = await fastPath.handle({ body, verified, rawBody });
+
+      log('fastPath 处理完成');
+
+      return res.status(200).json(result || { ok: true });
+    } catch (err) {
+      log('fastPath 失败', { error: err.message });
+
+      // 关键：失败也返回 200，让平台别再重推
+      // 这条事件没落库，重推也没用，只会反复打你
+      return res.status(200).json({ ok: true, deferred: true });
+    }
+  }
+```
+
+**注意 `body` 是第三处改动的前提——第一处那个 `const body = req.body || {};` 要提到这一段的**上面**。**
+
+**现在文件里的顺序是：验签 → `const body = req.body` → url_verification 判断 → normalize。** **把 `const body = ...` 挪到 `if (!verified.ok)` 后面立刻执行，就能给 `fastPath` 用了。**
+
+**第三处：`body` 那个声明就保持在 `if (!verified.ok)` 之后。** **别的地方不用动。**
+
+**为什么失败也返回 200：** **这条事件压根没落库。** **返回 500 让平台重推，重推过来还是走同一条 `fastPath`，还是失败。** **结果是平台在十分钟内打你几十次，日志里全是同一条错误。**
+
+**返回 200 + `deferred: true`，等于告诉平台"我收到了，别管了"。** **代价是这条点击真的丢了——所以 `log` 里必须记全，事后能靠日志手工补。**
 
 **在飞书适配器里定义：**
 
 ```js
 fastPath: {
-  match: (parsed, verified) => {
-    const body = verified.decrypted || parsed;
-    return body.header && body.header.event_type === 'card.action.trigger';
+  match: (body) => {
+    return body && body.header && body.header.event_type === 'card.action.trigger';
   },
-  handle: async ({ parsed, verified }) => {
-    return handleCardActionInline(parsed, verified);
+  handle: async ({ body, verified }) => {
+    return handleCardActionInline(body, verified);
   },
 },
 ```
+
+**注意 `match` 只收 `body` 一个参数。** **上面代码块里如果写成 `match: (parsed, verified) => ...` 就和这里的调用对不上——** **`parsed` 拿到的是 `body`，`verified` 拿到的是 `verified`，刚好蒙对。** **但这种"参数名和调用不一致"的写法，下次换个函数就出错。** **统一成"需要什么传什么"。**
 
 **然后 `handleCardActionInline` 在 1 秒内完成，返回：**
 

@@ -2,7 +2,7 @@
 
 > 这节课结束时，你手上有：`rag-app\ask.js`（一条命令：问题进、带引用的答案出）、`rag-app\lib\prompt.js`（拼 prompt 的模板 + 引用格式）、`rag-app\lib\verify.js`（引用核查，能抓出"编造引用"）、`rag-app\out\ask-log.md`（10 个问答的完整记录 + 核查结果）。
 
-**时间**：约 120 分钟
+**建议用时**：120 分钟
 **前置**：第 89 节课的 `searchVector` / `searchKeyword`，`out\keyword-baseline.md`
 
 ---
@@ -160,7 +160,7 @@ searchVector("住的能报吗")  →  3 条
 **1.** 进项目：
 
 ```text
-cd /d "B:\OPC-Distance_study\每周课程\03-数据与智能\第13周-检索与RAG\第06节课\03-练习代码"
+cd "B:\OPC-Distance_study\每周课程\03-数据与智能\第13周-检索与RAG\第06节课\03-练习代码"
 xcopy /E /I /Y "..\第05节课\03-练习代码\rag-app" rag-app
 cd rag-app
 ```

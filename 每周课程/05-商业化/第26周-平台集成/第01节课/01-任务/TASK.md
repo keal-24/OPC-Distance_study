@@ -4,7 +4,8 @@
 > 这节课不写代码。它解决一个更前置的问题：**你的系统应该长在哪里。**
 > 答错了，后面六节课全白做。
 
-**建议用时**：110 分钟
+**建议用时**：170 分钟（7 个步骤，含动手敲代码的时间）
+**时间怎么排**：一次做不完是正常的。建议分两次：第 0—2 步（75 分钟）一次，第 3—6 步（95 分钟）一次。每个步骤标题后面的括号就是该步的分钟数。
 **你需要先完成**：第 175 节课（支付和对账都跑通，`saas-lab` 完整）
 
 ---
@@ -765,20 +766,23 @@ platform/client.js            ← 平台相关：发消息的 HTTP 细节
 
 **同一个员工，在飞书的 `open_id` 和企微的 `userid` 是两个完全不同的字符串。**
 
-**所以你的 `platform_contacts` 表必须存"平台 + 平台标识"的组合：**
+**所以你的 `platform_contacts` 表必须存"平台 + 平台标识"的组合。**
+
+**这一节不建表，只把最关键的三个字段记下来（第 181 节建完整版）：**
 
 ```sql
 create table platform_contacts (
-  tenant_id    uuid not null,
-  platform     text not null,        -- feishu / wecom / dingtalk
-  platform_uid text not null,        -- open_id 或 userid
-  local_user_id uuid,                -- 映射到你的 users 表
-  ...
+  tenant_id      uuid not null,
+  platform       text not null,        -- feishu / wecom / dingtalk
+  platform_uid   text not null,        -- open_id 或 userid
+  local_user_id  uuid,                 -- 映射到你的 users 表
   primary key (tenant_id, platform, platform_uid)
 );
 ```
 
 **主键必须带 `platform`。** 不然接入第二家的时候，两个平台的 id 会互相覆盖。
+
+**主键还必须是三列的复合键，不能只用 `platform_uid` 一列。** **因为同一个 open_id 在 A 客户和 B 客户那里可能撞上——** **虽然概率极低，但撞上就是两个客户看到对方的通讯录。**
 
 **这一点在第 181 节做通讯录同步时会用到。现在先记下来。**
 

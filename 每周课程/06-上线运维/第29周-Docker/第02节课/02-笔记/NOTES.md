@@ -119,8 +119,8 @@ build 时 `transferring context` 是多少 MB：
 ```text
 | 镜像 | 基础镜像 | 大小 |
 |---|---|---|
-| chat-app:1.0 | node:20 | |
-| chat-app:2.0 | node:20-alpine | |
+| chat-app:1.0 | node:22 | |
+| chat-app:2.0 | node:22-alpine | |
 ```
 
 差了多少：

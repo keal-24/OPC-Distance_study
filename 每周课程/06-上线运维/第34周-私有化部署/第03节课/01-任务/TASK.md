@@ -27,7 +27,7 @@ docker compose up -d
 | 命令 | 它偷偷访问了什么 |
 |---|---|
 | `docker pull` | `registry-1.docker.io` |
-| `docker build`（有 `FROM node:20`） | 同上，拉基础镜像 |
+| `docker build`（有 `FROM node:22`） | 同上，拉基础镜像 |
 | `docker compose up`（镜像不存在时） | 同上，自动 pull |
 | `apt install docker.io` | 客户内网的 apt 源（通常没有） |
 | `npm install` | `registry.npmjs.org` |
@@ -71,6 +71,42 @@ docker compose up -d
 
 ---
 
+# 开工卡：这一节在哪台机器、哪个目录做
+
+> **每节开始前先读这张卡。** 环境和你的实际情况不一致，就先解决环境，别往下看。
+
+| 问题 | 答案 |
+|---|---|
+| **在哪台机器** | **只有你的 Windows 电脑。** 用 `docker save` / `docker load` 模拟「打包送进内网」。 |
+| **用哪个终端** | **Git Bash。** |
+| **现在在哪个目录** | <code>mkdir -p "B:/OPC-Distance_study/每周课程/06-上线运维/第34周-私有化部署/第03节课/03-练习代码/offline-package/images"</code><br><code>cd "B:/OPC-Distance_study/每周课程/06-上线运维/第34周-私有化部署/第03节课/03-练习代码/offline-package"</code> |
+| **本节新建什么** | `offline-package/images/*.tar`（save 出来的镜像）<br>`offline-package/manifest.txt`（清单 + 校验和）<br>`install.sh`（一键安装）<br>`安装记录.md` |
+
+## 开工前先跑这一条
+
+确认你没站错地方：
+
+```bash
+docker images | grep -E "chat-app|postgres|nginx" | head
+```
+
+**应该看到：**
+
+```text
+chat-app   1.2.0   xxxxx   1 day ago    182MB
+postgres   16.3    xxxxx   2 weeks ago  432MB
+```
+
+**至少要有一个 `chat-app` 镜像可以打包。**
+
+## 如果不对
+
+**一个都没有** → 回第 29 周第 198 节 build 一个，或者用现成的 `postgres:16.3` 先练 `save`/`load`。
+
+**⚠️ 不要跑 `docker system prune -a`** → 那会把你所有镜像删光。
+
+---
+
 # 第 1 步：先列清单，再打包（20 分钟）
 
 ## 1.1 离线包必须包含什么
@@ -99,7 +135,7 @@ docker compose up -d
 **你的 Dockerfile 里如果是这样：**
 
 ```dockerfile
-FROM node:20-alpine
+FROM node:22-alpine
 WORKDIR /app
 COPY package*.json ./
 RUN npm ci --omit=dev
@@ -137,7 +173,7 @@ app/
 **Dockerfile 要写成能跳过安装：**
 
 ```dockerfile
-FROM node:20-alpine
+FROM node:22-alpine
 WORKDIR /app
 COPY package*.json ./
 # 如果离线包里已带 node_modules，这一步会很快返回
@@ -700,6 +736,46 @@ ls -lh chat-app-offline-1.2.0.tar.gz
 
 # 第 3 步：把包送进内网（20 分钟）
 
+## 3.0 先看这张对照表：你人在 Windows，但客户是 Linux
+
+**这一节从这一步开始，命令都是给"客户的 Linux 机器"写的。**
+
+**而你手上只有 Windows。** 怎么办？
+
+**两种做法，选一种：**
+
+```text
+做法 A（推荐，最真）：在 WSL 里做
+  Windows 自带 WSL（第 197 节课装过 Docker 时就有了）。
+  WSL 里就是真的 Linux，所有命令原样能跑。
+  路径也基本一样（/opt、/run/media 都能用）。
+
+做法 B（最省事）：在 Git Bash 里做，用替代命令
+  Git Bash 带了很多 Linux 命令（tar、cat、cp、ls、chmod、find 都有）。
+  只有少数几个要换写法，见下表。
+```
+
+**Git Bash 里的替代写法：**
+
+| 客户机器上（Linux） | 你 Windows 上（Git Bash） | 说明 |
+|---|---|---|
+| `sha256sum 文件` | `sha256sum 文件` | ✅ 一样，Git Bash 自带 |
+| `sha256sum -c SHA256SUMS` | `sha256sum -c SHA256SUMS` | ✅ 一样 |
+| `split -b 3G -d file part-` | `split -b 3G -d file part-` | ✅ 一样（Git Bash 有 split） |
+| `cat part-* > 文件` | `cat part-* > 文件` | ✅ 一样 |
+| `tar -xzf x.tar.gz` | `tar -xzf x.tar.gz` | ✅ 一样 |
+| `chmod +x install.sh` | `chmod +x install.sh` | ✅ 一样（但 Windows 上执行权限意义有限） |
+| `ls /run/media/root/` | `ls /d/`（看你的 U 盘盘符） | ⚠️ **不一样**，见 3.3 |
+| `cp /run/media/... /opt/offline/` | `cp /d/文件 /c/opt/offline/` | ⚠️ **不一样**，见 3.3 |
+| `du -sh 目录` | `du -sh 目录` | ✅ 一样 |
+| `df -h` | `df -h` | ✅ 一样（但只显示 Git Bash 挂载的盘） |
+
+**结论：** 只有「U 盘在哪」这一件事不一样，**其他命令原样照抄**。
+
+**⚠️ 一个必须替换的路径：** 客户机器上的 `/opt/app`，在你这台 Windows 上一律写成 `/c/opt/app`（第 233 节说过原因）。
+
+---
+
 ## 3.1 传输方式的三种选择
 
 | 方式 | 适用 | 注意 |
@@ -820,7 +896,30 @@ ls /run/media/root/KINGSTON/
 chat-app-offline-1.2.0.tar.gz
 ```
 
+**⚠️ 你在 Windows 上做这一步，命令不一样：**
+
+```bash
+# 先看机器上有哪些盘（Git Bash 里的写法）
+ls /c /d /e 2>/dev/null
+```
+
+**你的 U 盘一般是最后一个能列出来的盘（比如 `/d`）。确认一下里面是不是你要的文件：**
+
+```bash
+ls /d/
+```
+
+**应该看到：**
+
+```text
+chat-app-offline-1.2.0.tar.gz
+```
+
+**`/d` 就是你的"`/run/media/root/KINGSTON`"。** 后面所有 `cp /run/media/root/KINGSTON/xxx` 都换成 `cp /d/xxx`。
+
 **拷到本地再解压（不要在 U 盘上直接解压）：**
+
+**客户机器上（Linux）：**
 
 ```bash
 mkdir -p /opt/offline
@@ -828,6 +927,24 @@ cp /run/media/root/KINGSTON/chat-app-offline-1.2.0.tar.gz /opt/offline/
 cd /opt/offline
 tar -xzf chat-app-offline-1.2.0.tar.gz
 ```
+
+**你在 Windows 上（Git Bash）—— 换成这个：**
+
+```bash
+mkdir -p /c/opt/offline
+cp /d/chat-app-offline-1.2.0.tar.gz /c/opt/offline/
+cd /c/opt/offline
+tar -xzf chat-app-offline-1.2.0.tar.gz
+```
+
+**逐行看两边的差别：**
+
+| 行 | 客户机器 | 你的 Windows | 为什么不同 |
+|---|---|---|---|
+| 建目录 | `mkdir -p /opt/offline` | `mkdir -p /c/opt/offline` | Git Bash 里 `/opt` 不是根分区，要用 `/c/opt` |
+| 拷文件 | `/run/media/root/KINGSTON/` | `/d/` | U 盘在你这里是 `D:` 盘 |
+| 进目录 | `cd /opt/offline` | `cd /c/opt/offline` | 同上 |
+| 解压 | 完全一样 | 完全一样 | `tar` 两边都有 |
 
 **应该看到：没有输出。**
 
@@ -852,8 +969,17 @@ SHA256SUMS  config  docs  images  manifest.txt  scripts  tools
 
 ## 3.4 先校验，再安装
 
+**客户机器上（Linux）：**
+
 ```bash
 cd /opt/offline/offline-package
+sha256sum -c SHA256SUMS
+```
+
+**你在 Windows 上（Git Bash）：**
+
+```bash
+cd /c/opt/offline/offline-package
 sha256sum -c SHA256SUMS
 ```
 
@@ -869,6 +995,34 @@ sha256sum -c SHA256SUMS
 ---
 
 # 第 4 步：在没有网的机器上装 Docker（30 分钟）
+
+## 4.0 先记住这一张路径换算表（后面每一步都用）
+
+**从这里开始到本节结束，所有命令都写成客户机器上的样子（`/opt/...`）。**
+
+**你在 Windows 上照着做，只需要把 `/opt` 换成 `/c/opt`。** 其他一个字都不用改。
+
+| 客户机器（Linux） | 你 Windows 上（Git Bash） |
+|---|---|
+| `/opt/offline` | `/c/opt/offline` |
+| `/opt/offline/offline-package` | `/c/opt/offline/offline-package` |
+| `/opt/app` | `/c/opt/app` |
+| `/opt/app/.env` | `/c/opt/app/.env` |
+| `/var/lib/docker` | 不用管（Docker Desktop 自己管） |
+
+**一条命令举例：**
+
+```bash
+# 课件里写的是这个（客户机器）
+cd /opt/offline/offline-package
+
+# 你在 Windows 上要跑这个
+cd /c/opt/offline/offline-package
+```
+
+**⚠️ 为什么不能直接用 `/opt`：** Git Bash 会把 `/opt` 映射到它自己的安装目录下面，不是真的根分区。你在那里建的东西，重启 Git 或者换一台机器就找不到了。
+
+**⚠️ 一个例外，必须知道：** 第 4 步装 Docker 的部分，**Windows 上不适用**（你的 Docker Desktop 早就装好了，就是第 197 节课装的）。**那一段你只需要读懂，不用照着做。** 我在那一步会明确标出来。
 
 ## 4.1 先看客户机器有没有
 
@@ -919,6 +1073,20 @@ systemctl enable docker
 **如果 `systemctl` 也报错（有些精简系统没有 systemd），才走静态安装。**
 
 ## 4.2 静态二进制安装（不需要包管理器）
+
+**⚠️ 这一小节在 Windows 上不用照做。**
+
+**为什么：**
+
+```text
+你电脑上的 Docker 早在第 197 节课就装好了（Docker Desktop）。
+这一小节讲的是"客户的 Linux 上没有 docker，怎么离线装"。
+你现在要做的只有一件事：读懂它，知道以后会遇到什么。
+```
+
+**如果你真想练，就在 WSL 里练（`wsl` 进去，就是一台干净的 Ubuntu）。**
+
+**下面这一整套，是客户现场的做法，你了解即可。**
 
 **为什么用静态包：**
 

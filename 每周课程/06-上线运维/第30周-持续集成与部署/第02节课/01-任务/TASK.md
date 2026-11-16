@@ -60,6 +60,46 @@
 
 ---
 
+# 开工卡：这一节在哪台机器、哪个目录做
+
+> **每节开始前先读这张卡。** 环境和你的实际情况不一致，就先解决环境，别往下看。
+
+| 问题 | 答案 |
+|---|---|
+| **在哪台机器** | **你的 Windows 电脑 + 浏览器里的 GitHub。** |
+| **用哪个终端** | **Git Bash** + 浏览器。 |
+| **现在在哪个目录** | <code>cd "B:/OPC-Distance_study/每周课程/06-上线运维/第30周-持续集成与部署/第01节课/03-练习代码/ci-lab"</code><br>（整个第 30 周共用这一个目录） |
+| **本节新建什么** | `eslint.config.mjs`<br>`.github/workflows/check.yml` |
+
+## 开工前先跑这一条
+
+确认你没站错地方：
+
+```bash
+ls -a
+```
+
+**应该看到：**
+
+```text
+.
+..
+.git
+.github
+package.json
+package-lock.json
+```
+
+**必须看到 `.git` 和 `.github`。**
+
+## 如果不对
+
+**没有 `.git`** → 第 1 节没 `git init`，回去补。
+
+**没有 `.github`** → 第 1 节的 workflow 没建，回第 204 节第 2 步。
+
+---
+
 # 第 1 步：先在本地跑通（20 分钟）
 
 ## 1.1 为什么先在本地跑
@@ -724,10 +764,10 @@ jobs:
       - name: 下载仓库代码
         uses: actions/checkout@v4
 
-      - name: 安装 Node 20
+      - name: 安装 Node 22
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
           cache: 'npm'
 
       - name: 安装依赖
@@ -809,17 +849,17 @@ Jobs
 ```text
 ✅ Set up job
 ✅ 下载仓库代码
-✅ 安装 Node 20
+✅ 安装 Node 22
 ✅ 安装依赖
 ✅ 语法检查
 ✅ 代码规范检查
 ✅ Complete job
 ```
 
-**注意最后还有一个 `Post 安装 Node 20`（列表往下滚）：**
+**注意最后还有一个 `Post 安装 Node 22`（列表往下滚）：**
 
 ```text
-✅ Post 安装 Node 20    1s
+✅ Post 安装 Node 22    1s
 ✅ Complete job
 ```
 
@@ -1719,10 +1759,10 @@ ESLint 装在 devDependencies 里
 **所以第 4 节课的 Dockerfile 里会用多阶段构建：**
 
 ```dockerfile
-FROM node:20 AS build
+FROM node:22 AS build
 RUN npm ci
 
-FROM node:20
+FROM node:22
 RUN npm ci --omit=dev
 ```
 

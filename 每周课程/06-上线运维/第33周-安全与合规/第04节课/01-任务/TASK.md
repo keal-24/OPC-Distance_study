@@ -71,13 +71,60 @@ list.innerHTML += `<li>${msg.content}</li>`;
 
 ---
 
+# 开工卡：这一节在哪台机器、哪个目录做
+
+> **每节开始前先读这张卡。** 环境和你的实际情况不一致，就先解决环境，别往下看。
+
+| 问题 | 答案 |
+|---|---|
+| **在哪台机器** | **只有你的 Windows 电脑。** 这一节要亲手打三种注入，**只在自己的 lab 里打**。 |
+| **用哪个终端** | **Git Bash。** |
+| **现在在哪个目录** | <code>mkdir -p "B:/OPC-Distance_study/每周课程/06-上线运维/第33周-安全与合规/第04节课/03-练习代码/inject-lab"</code><br><code>cd "B:/OPC-Distance_study/每周课程/06-上线运维/第33周-安全与合规/第04节课/03-练习代码/inject-lab"</code> |
+| **本节新建什么** | `inject-lab/server.js`（有三种注入的版本）<br>`inject-lab/server-fixed.js`<br>`attacks.md`（9 条 payload：期望 / 实际 / 是否通过） |
+
+## 开工前先跑这一条
+
+确认你没站错地方：
+
+```bash
+node -v; sqlite3 --version 2>/dev/null || echo "没装命令行 sqlite3，用 better-sqlite3 代替"
+```
+
+**应该看到：**
+
+**两种都行：**
+
+```text
+3.45.0 2024-01-15 ...
+```
+
+或
+
+```text
+没装命令行 sqlite3，用 better-sqlite3 代替
+```
+
+**没装命令行 `sqlite3` 也没关系**，这一节可以用 `better-sqlite3` 在 JS 里查。
+
+## 如果不对
+
+**两个都没有** → 第 1 步会让你 `npm install better-sqlite3`，装它就行。
+
+---
+
 # 第 1 步：SQL 注入——先亲手打穿它（25 分钟）
 
 ## 1.1 建实验场
 
+**先确认你在 `inject-lab/` 里**（开工卡已经带你进来了）：
+
 ```bash
-mkdir -p 03-练习代码/inject-lab
-cd 03-练习代码/inject-lab
+pwd
+```
+
+**路径最后必须是 `inject-lab`。** 如果不对，回开工卡重跑。
+
+```bash
 npm init -y
 npm install express better-sqlite3
 ```

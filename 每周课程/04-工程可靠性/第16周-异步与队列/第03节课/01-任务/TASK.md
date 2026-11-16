@@ -70,7 +70,7 @@ npm install better-sqlite3 express
 
 ```text
 ① 报 node-gyp / MSBuild 相关错误
-   → 你的 Node 版本没有预编译包。最省事的解法：换到 Node 20 或 22 LTS
+   → 你的 Node 版本没有预编译包。最省事的解法：换到 Node 22 或 22 LTS
 
 ② 报 Python not found
    → 同上，它在尝试本地编译。别去装 Python，换 Node 版本更快

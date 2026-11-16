@@ -4,7 +4,8 @@
 > 这是整个 36 周里最"必须做对"的一节课。**前面 173 节，回调错一次就是钱错一次。**
 > 90% 的支付事故不在"发起支付"，在"处理回调"。**因为发起支付是你主动做的，回调是别人打给你的。**
 
-**建议用时**：150 分钟
+**建议用时**：225 分钟（8 个步骤，含动手敲代码的时间）
+**时间怎么排**：一次做不完是正常的。建议分两次：第 0—3 步（125 分钟）一次，第 4—7 步（100 分钟）一次。每个步骤标题后面的括号就是该步的分钟数。
 **你需要先完成**：第 173 节课（状态机、幂等、并发都跑通）
 
 ---
@@ -1473,20 +1474,47 @@ REFUND_FAILED        退款失败
 
 **但现在代码里 `RACE_LOST` 会走到 `if (revived.ok)` 为 false 的分支，返回 500。**
 
-**改一下回调接口的判断：**
+**改一下回调接口的判断。**
+
+**找到第 3 步写的那个 `if (outcome.reason === 'NEEDS_REVIVAL') { ... }` 块（在 577—593 行），整个换成这版：**
 
 ```js
-if (outcome.reason === 'NEEDS_REVIVAL') {
-  const revived = await tryRevive({ orderNo, paymentNo, amountCents });
+  if (outcome.reason === 'NEEDS_REVIVAL') {
+    const revived = await tryRevive({ orderNo, paymentNo, amountCents });
 
-  if (revived.ok || revived.reason === 'RACE_LOST') {
-    return res.json({ code: 'SUCCESS', message: '已生效' });
+    if (revived.ok) {
+      return res.json({ code: 'SUCCESS', message: '已复活并生效' });
+    }
+
+    if (revived.reason === 'RACE_LOST') {
+      log('复活竞争失败，别人处理了', { orderNo, paymentNo });
+      return res.json({ code: 'SUCCESS', message: '已生效' });
+    }
+
+    if (revived.reason === 'DUPLICATE_PAYMENT') {
+      log('重复支付，需人工退款', { orderNo, paymentNo });
+      return res.json({
+        code: 'SUCCESS',
+        message: '已收到，重复支付将原路退回',
+      });
+    }
+
+    log('复活失败', { orderNo, paymentNo, reason: revived.reason });
+    return res.status(500).json({ code: 'REVIVE_FAILED', message: '复活失败' });
   }
-  ...
-}
 ```
 
+**只加了三行 `RACE_LOST` 分支和一行 `log`，其余没变。**
+
+**为什么 `RACE_LOST` 要返回 200 而不是 500。**
+
 **`RACE_LOST` 说明别人成功了，你的目标是"这单变成 paid"，已经达成了。**
+
+**返回 500 的话，支付网关会重试。** **重试过来还是 `RACE_LOST`，还是 500，一直重试到网关放弃。**
+
+**而网关放弃的那一刻，它会把这笔记成"回调失败"——** **你的对账表里就多了一条"钱收了但订单没生效"的假异常。**
+
+**这是真实存在的噪音来源：** **每次并发复活，都对账里多一条假的。** **查起来要花半天，最后发现是"代码没错，状态码错了"。**
 
 ## 6.4 自检点
 

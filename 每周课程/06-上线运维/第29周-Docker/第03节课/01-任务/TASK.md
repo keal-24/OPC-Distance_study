@@ -53,6 +53,41 @@ docker ps                          看它在不在
 
 ---
 
+# 开工卡：这一节在哪台机器、哪个目录做
+
+> **每节开始前先读这张卡。** 环境和你的实际情况不一致，就先解决环境，别往下看。
+
+| 问题 | 答案 |
+|---|---|
+| **在哪台机器** | **你的 Windows 电脑。** |
+| **用哪个终端** | **Git Bash。** |
+| **现在在哪个目录** | <code>cd "B:/OPC-Distance_study/每周课程/06-上线运维/第29周-Docker/第03节课/03-练习代码/chat-app-docker"</code><br>（第 2 节建的目录，这一节继续用） |
+| **本节新建什么** | `命令记录.md`（贴 `docker run` / `logs` / `exec` 的完整输出） |
+
+## 开工前先跑这一条
+
+确认你没站错地方：
+
+```bash
+docker images | grep chat-app
+```
+
+**应该看到：**
+
+```text
+chat-app    2.0    a1b2c3d4e5f6    2 hours ago    178MB
+```
+
+**必须能看到 `chat-app:2.0`。** 这一节所有实验都基于它。
+
+## 如果不对
+
+**什么都没输出** → 第 2 节的镜像没做成，回第 198 节课重新 build。
+
+**`pwd` 不在 `chat-app-docker`** → 上一节目录没建对，回第 2 节 1.2。
+
+---
+
 # 第 1 步：用一条完整的命令启动（15 分钟）
 
 ## 1.1 先确认镜像还在
@@ -136,7 +171,7 @@ CONTAINER ID   IMAGE          COMMAND                  CREATED         STATUS   
 
 **`COMMAND` 那一列为什么是你没写过的命令：**
 
-`node:20-alpine` 这个基础镜像里定义了 `ENTRYPOINT ["docker-entrypoint.sh"]`。
+`node:22-alpine` 这个基础镜像里定义了 `ENTRYPOINT ["docker-entrypoint.sh"]`。
 
 **最终执行的是 `ENTRYPOINT` + `CMD` 拼起来：**
 
@@ -871,9 +906,9 @@ exec: "bash": executable file not found in $PATH: unknown
 **规则：**
 
 ```text
-node:20-alpine   → 用 sh
-node:20-slim     → 有 bash，可以用 bash
-node:20          → 有 bash
+node:22-alpine   → 用 sh
+node:22-slim     → 有 bash，可以用 bash
+node:22          → 有 bash
 ubuntu           → 有 bash
 ```
 
@@ -915,7 +950,7 @@ env
 ```
 
 ```text
-NODE_VERSION=20.18.0
+NODE_VERSION=22.22.2
 NODE_ENV=production
 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 HOSTNAME=8f3a2b1c9d4e
@@ -1484,7 +1519,7 @@ exec: "bash": executable file not found in $PATH: unknown
 
 **为什么：**
 
-`node:20-alpine` 基于 alpine，alpine 为了小，只带 busybox 的 `sh`。
+`node:22-alpine` 基于 alpine，alpine 为了小，只带 busybox 的 `sh`。
 
 **怎么查你的镜像里有什么 shell：**
 

@@ -4,7 +4,8 @@
 > 这节课看起来只是"存个凭证、换个 token"，但它是整个平台集成里**最容易在半夜出事**的部分。
 > 上一个真实的故事：某应用每个请求换一次 token，并发一高被平台限流，**整个应用 40 分钟不可用**——因为所有功能都要 token。
 
-**建议用时**：130 分钟
+**建议用时**：145 分钟（6 个步骤，含动手敲代码的时间）
+**时间怎么排**：一次做不完是正常的。建议分两次：第 0—2 步（85 分钟）一次，第 3—5 步（60 分钟）一次。每个步骤标题后面的括号就是该步的分钟数。
 **你需要先完成**：第 176 节课（假平台能跑，`docs/notify-list.md` 写好了）
 
 ---
@@ -38,9 +39,22 @@ let cachedToken = null;
 
 async function getAccessToken() {
   if (cachedToken) return cachedToken;     // ❌ 永远不过期
-  ...
+
+  const res = await fetch('https://open.feishu.cn/open-apis/auth/v3/tenant_access_token/internal', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ app_id: APP_ID, app_secret: APP_SECRET }),
+  });
+
+  const data = await res.json();
+  cachedToken = data.tenant_access_token;
+  return cachedToken;
 }
 ```
+
+**这段代码"能跑"——第一次调用会正确换到 token，第二次开始走缓存。**
+
+**问题在 `if (cachedToken) return cachedToken;` 这一行：它只判断"有没有值"，不判断"这值还能不能用"。**
 
 **这个 bug 的可怕之处：上线后 2 小时内一切正常。**
 
@@ -1152,15 +1166,26 @@ const { callPlatform } = require('../src/platform/client');
 
 **代码里那个 `Math.max(60, ...)` 就是为了兜住这个——但它兜不住"平台给的有效期比 60 秒还短"的情况。**
 
-**这个实验会暴露它：**
+**这个实验会暴露它。**
+
+**你要跑 8 轮，每轮隔 10 秒（脚本里已经写了 `setTimeout(r, 10000)`）。** **8 轮 × 10 秒 = 80 秒，跨过了 60 秒那条线。**
 
 ```text
 第 1 轮  ok
 第 2 轮  ok
-...
-第 7 轮  ok        ← 60 秒后，缓存过期，重新换
-第 8 轮  失败      ← 如果你没有自动重试
+第 3 轮  ok
+第 4 轮  ok        ← 60 秒内，全走缓存
+第 5 轮  ok
+第 6 轮  ok
+第 7 轮  ok        ← 60 秒到了，缓存失效，重新换
+第 8 轮  失败      ← 真实平台在这里会 401
 ```
+
+**中间的 3—6 轮我故意省略了，因为它们和第 2 轮完全一样。** **这个省略不影响你验证——你只需要盯第 1 轮和第 8 轮的差别。**
+
+**但这个脚本用的是假平台（本地起的 mock，`expire` 固定返回 30），所以第 8 轮不会真的失败。** **要看真实失败，得把 `BASE_URL` 换成真的飞书地址，并且让 `expire` 变小。**
+
+**这个实验的真正价值不是"看到失败"，是"看到日志里出现 `token 失效，清缓存后重试一次`"。**
 
 **等等，有自动重试。所以实际会是：**
 

@@ -74,15 +74,55 @@ app.get("/api/messages/:id", requireLogin, async (req, res) => {
 
 ---
 
+# 开工卡：这一节在哪台机器、哪个目录做
+
+> **每节开始前先读这张卡。** 环境和你的实际情况不一致，就先解决环境，别往下看。
+
+| 问题 | 答案 |
+|---|---|
+| **在哪台机器** | **只有你的 Windows 电脑。**<br>**⚠️ 这一节故意留一个越权洞，只在 `idor-lab/` 里留，绝不要在你上线的代码里留。** |
+| **用哪个终端** | **Git Bash。** |
+| **现在在哪个目录** | <code>mkdir -p "B:/OPC-Distance_study/每周课程/06-上线运维/第33周-安全与合规/第03节课/03-练习代码/idor-lab"</code><br><code>cd "B:/OPC-Distance_study/每周课程/06-上线运维/第33周-安全与合规/第03节课/03-练习代码/idor-lab"</code> |
+| **本节新建什么** | `idor-lab/server.js`（有洞版）<br>`idor-lab/server-fixed.js`（修好版）<br>`idor-lab/seed.js`（两个用户 + 各一条消息）<br>`越权记录.md`（10 条测试的请求和响应）<br>`权限清单.md`（你项目里所有带编号的接口） |
+
+## 开工前先跑这一条
+
+确认你没站错地方：
+
+```bash
+node -v && ls
+```
+
+**应该看到：**
+
+```text
+v22.22.2
+说明.md
+```
+
+**`ls` 只有 `说明.md`** —— 目录是空的，这一节从零建。
+
+## 如果不对
+
+**已经有 `idor-lab/`** → 你之前做过，先 `mv idor-lab idor-lab.bak-$(date +%s)`。
+
+---
+
 # 第 1 步：先亲手越一次权（20 分钟）
 
 ## 1.1 建一个最小的实验场
 
 **为什么不在真项目里做：** 这一节要故意留一个洞，再补上。**真项目上留洞的每一分钟都是风险。**
 
+**先确认你在 `idor-lab/` 里**（开工卡已经带你进来了）：
+
 ```bash
-mkdir -p 03-练习代码/idor-lab
-cd 03-练习代码/idor-lab
+pwd
+```
+
+**路径最后必须是 `idor-lab`。** 如果不对，回开工卡重跑。
+
+```bash
 npm init -y
 npm install express better-sqlite3
 ```

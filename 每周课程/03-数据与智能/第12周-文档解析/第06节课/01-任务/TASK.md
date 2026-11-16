@@ -2,7 +2,7 @@
 
 > 这节课结束时，你手上有：`data\app.db` 里的三张表 `documents` / `sections` / `chunks`，一个 `parse(filePath)` 统一接口，以及"单个文件失败能单独重试"的能力。
 
-**时间**：约 120 分钟
+**建议用时**：120 分钟
 **前置**：第 82 节课做出来的 `src\ocr.js`，以及前四节的所有读取函数
 
 ---
@@ -80,7 +80,7 @@ ocrFile         jpg / png
 ## 1.2 操作
 
 ```text
-cd /d B:\OPC-Distance_study\每周课程\03-数据与智能\第12周-文档解析\第06节课\03-练习代码
+cd "B:\OPC-Distance_study\每周课程\03-数据与智能\第12周-文档解析\第06节课\03-练习代码"
 xcopy "..\..\第05节课\03-练习代码\doc-parser" "doc-parser" /E /I /Y
 cd doc-parser
 npm install better-sqlite3

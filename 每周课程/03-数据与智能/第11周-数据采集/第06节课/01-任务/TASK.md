@@ -2,7 +2,7 @@
 
 > 这节课结束时，你手上有：`collector\upsert.js`（一个能反复跑、结果不变的写入脚本）、`collector\data\app.db`（30 条商品，跑第二遍还是 30 条）、`collector\data\dedup-report.md`（三次运行的新增/更新/跳过统计）。
 
-**时间**：约 115 分钟
+**建议用时**：115 分钟
 **前置**：第 75 节课洗干净的 `collector\data\clean.json`（7 条），以及第 74 节课抓全的 30 条
 
 ---
@@ -130,7 +130,7 @@ UNIQUE (source, source_id)                        ← 这两列组合起来才�
 **1.** 复制上一节的项目：
 
 ```text
-cd /d "B:\OPC-Distance_study\每周课程\03-数据与智能\第11周-数据采集\第06节课\03-练习代码"
+cd "B:\OPC-Distance_study\每周课程\03-数据与智能\第11周-数据采集\第06节课\03-练习代码"
 xcopy /E /I /Y "..\第05节课\03-练习代码\collector" collector
 cd collector
 del inspect-dirty.js
@@ -604,7 +604,7 @@ if (exist !== undefined) {
 **1.** 确认 mock-server 还在跑（另一个终端）：
 
 ```text
-cd /d "B:\OPC-Distance_study\每周课程\03-数据与智能\第11周-数据采集\第06节课\03-练习代码\collector"
+cd "B:\OPC-Distance_study\每周课程\03-数据与智能\第11周-数据采集\第06节课\03-练习代码\collector"
 node mock-server.js
 ```
 

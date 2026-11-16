@@ -2,7 +2,7 @@
 
 > 这节课结束时，你手上有：`mm-app\lib\tts-split.js`（长文本切分 + 时长估算）、`mm-app\lib\tts-cache.js`（缓存键 + 命中统计）、`mm-app\lib\speak.js`（合成 + 缓存 + 返回播放清单）、`mm-app\out\tts-log.md`（命中率与成本）。
 
-**时间**：约 115 分钟
+**建议用时**：115 分钟
 **前置**：第 102 节课的 `mm-app`（`lib/config.js` 里已有 `TTS_DIR` 和 `TTS_MODEL`）
 
 ---
@@ -140,7 +140,7 @@ SyntaxError: Unexpected token 'I', "ID3..." is not valid JSON
 **1.** 进项目：
 
 ```text
-cd /d "B:\OPC-Distance_study\每周课程\03-数据与智能\第15周-多模态\第05节课\03-练习代码"
+cd "B:\OPC-Distance_study\每周课程\03-数据与智能\第15周-多模态\第05节课\03-练习代码"
 xcopy /E /I /Y "..\第04节课\03-练习代码\mm-app" mm-app
 cd mm-app
 ```

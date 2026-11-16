@@ -2,7 +2,7 @@
 
 > 这节课结束时，你手上有：`第02节课/03-练习代码/agent/tools.js`，四个工具，每个都有能约束模型的 `description` 和参数边界；外加一个 30 行的校验器 `validate.js` 和八组校验结果。
 
-**时间**：约 100 分钟
+**建议用时**：100 分钟
 **前置**：第 92 节课做出来的 `agent/` 目录（`agent.js` 能跑，`data/app.db` 有 200 条订单）
 
 ---
@@ -89,7 +89,7 @@ SQLITE_ERROR: no such column: month
 ## 1.2 操作
 
 ```text
-cd /d B:\OPC-Distance_study\每周课程\03-数据与智能\第14周-智能体与工具
+cd "B:\OPC-Distance_study\每周课程\03-数据与智能\第14周-智能体与工具"
 xcopy 第01节课\03-练习代码\agent 第02节课\03-练习代码\agent /E /I
 cd 第02节课\03-练习代码\agent
 node check-db.js

@@ -61,6 +61,45 @@ docker compose pull && docker compose up -d
 
 ---
 
+# 开工卡：这一节在哪台机器、哪个目录做
+
+> **每节开始前先读这张卡。** 环境和你的实际情况不一致，就先解决环境，别往下看。
+
+| 问题 | 答案 |
+|---|---|
+| **在哪台机器** | **两台机器：你的 Windows（改代码、push）+ 一台能 SSH 的 Linux。**<br>这台 Linux 可以是真服务器、虚拟机、或局域网里另一台电脑，**但必须是 Linux** —— Windows 不行，因为要跑 `docker compose` 和 `chmod`。<br>**如果还没有服务器**（第 31 周才买），三个选择：<br><code>① 先跳过这一节，买完服务器再回来（推荐）</code><br><code>② 本机装个 Ubuntu 虚拟机</code><br><code>③ 用 WSL2 里的 Ubuntu 顶替（能跑通，但网络行为和真服务器有差别）</code> |
+| **用哪个终端** | **两个 Git Bash 窗口：**<br><code>窗口 A：你 Windows 本地，改代码、push</code><br><code>窗口 B：SSH 登到那台 Linux</code><br>**怎么判断自己在哪个窗口** —— 看提示符：<br><code>本地：  Admin@DESKTOP MINGW64 ~/...</code><br><code>服务器：root@ubuntu-server:~#</code> |
+| **现在在哪个目录** | **窗口 A（本地）：**<br><code>cd "B:/OPC-Distance_study/每周课程/06-上线运维/第30周-持续集成与部署/第01节课/03-练习代码/ci-lab"</code><br>**窗口 B（服务器）：**<br><code>sudo mkdir -p /srv/app && cd /srv/app</code> |
+| **本节新建什么** | `deploy_key` / `deploy_key.pub`（本地，安全的地方，**不进 Git**）<br>`/srv/app/docker-compose.yml`（服务器）<br>`/srv/app/deploy.sh`（服务器）<br>`deploy` job（加进 `build.yml`） |
+
+## 开工前先跑这一条
+
+确认你没站错地方：
+
+```bash
+uname -a && whoami && pwd
+```
+
+**应该看到：**
+
+```text
+Linux ubuntu-server 5.15.0-119-generic ... x86_64 GNU/Linux
+root
+/srv/app
+```
+
+**三行都要对：** `Linux` 说明是 Linux 系统，`root` 是账号，`/srv/app` 是目录。
+
+## 如果不对
+
+**输出里有 `MINGW` 或 `CYGWIN`** → 你还在本地 Windows，没连上服务器。先 `ssh root@你的IP`。
+
+**`Permission denied (publickey)`** → 密钥没配好，回第 212 节。
+
+**`/srv/app` 建不了（`Read-only file system`）** → 你不是 root，命令前加 `sudo`。
+
+---
+
 # 第 1 步：先把服务器上的东西准备好（25 分钟）
 
 ## 1.1 为什么先准备服务器
@@ -1211,7 +1250,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
           cache: 'npm'
       - run: npm ci
       - run: npm test -- --test-reporter=spec

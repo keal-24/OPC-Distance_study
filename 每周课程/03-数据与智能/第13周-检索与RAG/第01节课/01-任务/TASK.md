@@ -2,7 +2,7 @@
 
 > 这节课结束时，你手上有：`rag-app\split.js` 和 `rag-app\out\chunks-preview.json`，5 个样本文档被切成 10 块，每块 501–732 字。
 
-**时间**：约 100 分钟
+**建议用时**：100 分钟
 **前置**：第 84 节课做出来的 `kb.db`（三张表 documents / sections / chunks），或者本周第 2 步现造的 5 个 txt 文件
 
 ---
@@ -111,7 +111,7 @@ B:\OPC-Distance_study\每周课程\03-数据与智能\第13周-检索与RAG\第0
 先建项目目录。
 
 ```text
-cd /d B:\OPC-Distance_study\每周课程\03-数据与智能\第13周-检索与RAG\第01节课\03-练习代码
+cd "B:\OPC-Distance_study\每周课程\03-数据与智能\第13周-检索与RAG\第01节课\03-练习代码"
 mkdir rag-app
 cd rag-app
 mkdir data data\docs out tools
@@ -1395,7 +1395,7 @@ overlap 为什么要存在？举一个没有 overlap 就会答错的例子。
 | 表格被切成两块 | `overlapTail` 有没有跳过表格 | 加 `if (text.includes("\|")) return ""` |
 | 最短块只有 50 字 | 尾块合并条件 | 确认 `MIN = 300`，MAX 没被调小 |
 | 中文全是问号 | cmd 代码页 | `chcp 65001` 再跑 |
-| `Cannot find module` | 当前目录 | `cd /d` 回到 `rag-app` |
+| `Cannot find module` | 当前目录 | `cd` 回到 `rag-app` |
 | JSON 打不开 | 有没有写完整 | 用 `node -e "require('./out/chunks-preview.json')"` 试 |
 | 切出来 0 块 | `data\docs` 是空的 | `dir data\docs` 确认 |
 | 字数比原文少很多 | 空白被 trim 了 | 正常，统计按去空白算 |

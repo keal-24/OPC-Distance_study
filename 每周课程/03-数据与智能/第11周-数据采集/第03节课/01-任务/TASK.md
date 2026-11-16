@@ -2,7 +2,7 @@
 
 > 这节课结束时，你手上有：`第03节课/03-练习代码/collector/grab-html.js`（把 HTML 存成本地文件）、`collector/parse-cheerio.js`（用选择器抽字段 + 结构变化检查点）、`collector/raw-list.html`（你抓下来的原始页面）。
 
-**时间**：约 110 分钟
+**建议用时**：110 分钟
 **前置**：第 72 节课的 `collector` 项目（能起 mock-server，会写 `fetchJson`）
 
 ---
@@ -105,7 +105,7 @@ http://localhost:3001/html?page=1
 **4.** 换一个 cmd 窗口，把上一节的项目复制过来，再抓一份 HTML：
 
 ```text
-cd /d "B:\OPC-Distance_study\每周课程\03-数据与智能\第11周-数据采集\第03节课\03-练习代码"
+cd "B:\OPC-Distance_study\每周课程\03-数据与智能\第11周-数据采集\第03节课\03-练习代码"
 xcopy /E /I /Y "..\第02节课\03-练习代码\collector" collector
 cd collector
 del first-fetch.js error-case.js error-case-fixed.js limit-case.js timeout-case.js ua-case.js

@@ -62,6 +62,42 @@ docker exec / logs                  进去、看日志
 
 ---
 
+# 开工卡：这一节在哪台机器、哪个目录做
+
+> **每节开始前先读这张卡。** 环境和你的实际情况不一致，就先解决环境，别往下看。
+
+| 问题 | 答案 |
+|---|---|
+| **在哪台机器** | **你的 Windows 电脑。** |
+| **用哪个终端** | **Git Bash。** |
+| **现在在哪个目录** | **这一节新建一个独立的 compose 项目目录，不要放在 `chat-app-docker` 里：**<br><code>mkdir -p "B:/OPC-Distance_study/每周课程/06-上线运维/第29周-Docker/第06节课/03-练习代码/chat-stack"</code><br><code>cd "B:/OPC-Distance_study/每周课程/06-上线运维/第29周-Docker/第06节课/03-练习代码/chat-stack"</code> |
+| **本节新建什么** | `compose.yaml`（你手写）<br>`.env`（密码，用假值 `devpass`）<br>`app.env`（应用变量，可选）<br>`命令记录.md`（贴三种「连不上」的报错） |
+
+## 开工前先跑这一条
+
+确认你没站错地方：
+
+```bash
+docker network ls
+```
+
+**应该看到：**
+
+```text
+NETWORK ID     NAME      DRIVER    SCOPE
+xxxx           bridge    bridge    local
+xxxx           host      host      local
+xxxx           none      null      local
+```
+
+**只有系统自带的三个，没有 `chat-stack_default`。** 等这一节 `compose up` 之后会多一个。
+
+## 如果不对
+
+**报 `Cannot connect to the Docker daemon`** → 引擎没起，打开 Docker Desktop 等鲸鱼变绿。
+
+---
+
 # 第 1 步：先复现"两个容器连不上"（20 分钟）
 
 ## 1.1 起一个数据库容器

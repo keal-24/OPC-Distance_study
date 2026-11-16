@@ -60,8 +60,8 @@
 
 | # | 改动 | 改后大小 | 省了多少 | 有没有副作用 |
 |---|---|---|---|---|
-| 0 | 初始（node:20 + npm install） | | | |
-| 1 | 换 `node:20-alpine` | | | |
+| 0 | 初始（node:22 + npm install） | | | |
+| 1 | 换 `node:22-alpine` | | | |
 | 2 | `npm ci --omit=dev` | | | |
 | 3 | 加 `.dockerignore` | | | |
 | 4 | 多阶段 | | | |

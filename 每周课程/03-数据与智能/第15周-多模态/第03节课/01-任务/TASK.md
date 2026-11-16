@@ -2,7 +2,7 @@
 
 > 这节课结束时，你手上有：`mm-app\lib\imagine.js`（生图调用，含假实现）、`mm-app\scripts\imagine-lab.js`（五组提示词的对照实验）、`mm-app\out\imagine-lab.md`（哪些需求该生图、哪些不该，带你的实测）。
 
-**时间**：约 105 分钟
+**建议用时**：105 分钟
 **前置**：第 100 节课的 `mm-app`（有 `lib/config.js`、`lib/db.js`、`extractions` 表）
 
 ---
@@ -110,7 +110,7 @@
 **1.** 进项目：
 
 ```text
-cd /d "B:\OPC-Distance_study\每周课程\03-数据与智能\第15周-多模态\第03节课\03-练习代码"
+cd "B:\OPC-Distance_study\每周课程\03-数据与智能\第15周-多模态\第03节课\03-练习代码"
 xcopy /E /I /Y "..\第02节课\03-练习代码\mm-app" mm-app
 cd mm-app
 ```

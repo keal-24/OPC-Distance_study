@@ -4,7 +4,8 @@
 > 这节课的核心只有一句话：**回调只做两件事——把事件记下来、立刻回 200。所有重活全部丢到后台。**
 > 听起来简单，但它决定了你的应用在平台眼里是"健康的"还是"不健康的"。**不健康的会被平台降权、限流、甚至停用。**
 
-**建议用时**：140 分钟
+**建议用时**：160 分钟（6 个步骤，含动手敲代码的时间）
+**时间怎么排**：一次做不完是正常的。建议分两次：第 0—2 步（80 分钟）一次，第 3—5 步（80 分钟）一次。每个步骤标题后面的括号就是该步的分钟数。
 **你需要先完成**：第 177 节课（token 缓存和自动重试都跑通）
 
 ---
@@ -130,15 +131,13 @@ create index platform_events_tenant_time_idx
 alter table platform_events enable row level security;
 alter table platform_events force row level security;
 
+-- 只对 app_user 生效：业务侧永远只看得到自己租户的事件。
+-- 未归属（tenant_id is null）的记录只有 app_system 能读写。
 create policy tenant_isolation on platform_events
-  using (
-    tenant_id is null
-    or tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid
-  )
-  with check (
-    tenant_id is null
-    or tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid
-  );
+  for all
+  to app_user
+  using (tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid)
+  with check (tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid);
 ```
 
 **跑：**
@@ -178,13 +177,61 @@ npm run migrate
 
 **如果第 ③ 步查不到（未知的应用），这条事件就保持 null，进"待处理"。**
 
-**这就是为什么 RLS 策略里写了 `tenant_id is null or ...`。**
+### 那个 `to app_user` 是这一段最重要的六个字
 
-**注意：`tenant_id is null` 这一句意味着"任何租户都能看到未归属的事件"。**
+**很多人（包括我第一版）会把策略写成这样：**
 
-**这是个安全考量：** 因为未归属的事件还没确定属于谁。一旦归属了，就只有那个租户能看到。
+```sql
+using (
+  tenant_id is null                          -- ❌
+  or tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid
+)
+```
 
-**更严格的做法是用系统连接读写这张表，不让业务查询碰它。** 这一节先用宽松策略，但你要知道这个权衡。
+**理由听起来很合理：** **"插入时 `tenant_id` 还是空的，不加这个分支就插不进去啊。"**
+
+**但这句话打开了一个真实的越权通道。**
+
+**看清后果：**
+
+```text
+租户 A 的某个后台页面查 platform_events
+→ using 里两个分支，第二个不成立，第一个成立（tenant_id is null）
+→ 于是 A 读到了所有"还没归属"的事件
+→ 那些事件的 payload 里有 B 公司的消息内容、员工 open_id、群 ID
+```
+
+**而且这类越权最容易发生在"你自己加的排查页面上"。** **你为了看"有没有卡住的事件"，写了个 `select * from platform_events where status = 'failed'`——** **在旧策略下，它会把所有客户的事件都吐给你。**
+
+**`to app_user` 怎么解决这个问题：**
+
+**它把策略的适用范围限定到 `app_user` 这一个角色。** **而插入那些 `tenant_id` 为空的记录，走的是 `app_system`（有 `bypassrls`）——** **它本来就不受任何策略约束。**
+
+**所以：**
+
+```text
+app_system 插入 tenant_id 为空的记录     → 不受策略约束，能插
+app_user 想读到 tenant_id 为空的记录     → 策略不通过，0 行
+```
+
+**两边都对。**
+
+**这是"策略要有意漏口子"时的标准手法。** **它比在 `using` 里写 `or` 安全，因为：**
+
+```text
+or  → "对所有连接都成立的例外"   ← 每个租户都能钻
+to  → "只对某个角色不设限"       ← 只有那条连接能钻，而那条连接只在你手上
+```
+
+**判据：** **只要你想在策略里写 `or ... is null`，先问一句"这个例外是给谁的"。** **如果是"给系统进程用的"，就改成 `to 系统角色`。**
+
+**⚠️ 如果你跳过了第 165 节的 5.3（没建 `app_user` / `app_system`），这条 `to app_user` 会直接报错：**
+
+```text
+ERROR:  role "app_user" does not exist
+```
+
+**这个报错是好消息——它逼你回去把角色建好。** **没有那两个角色，这一节的 RLS 全是摆设。**
 
 ### `status` 的四个值
 
@@ -372,7 +419,7 @@ app.use(
 
 ```js
 const express = require('express');
-const pool = require('../db/pool');
+const systemPool = require('../db/system-pool');
 const { verifyFeishu, verifyWecom, verifyDingtalk } = require('../platform/verify');
 const { normalizeIncoming } = require('../platform/adapter');
 
@@ -470,7 +517,9 @@ router.post('/:platform', async (req, res) => {
   }
 
   try {
-    const inserted = await pool.query(
+    // 用 systemPool：这条 insert 可能写 tenant_id = null（未归属），
+    // 而 app_user 的策略不允许它写/读 null 的行（见 1.1 的 to app_user）
+    const inserted = await systemPool.query(
       `insert into platform_events
          (tenant_id, platform, event_id, event_type, payload)
        values ($1, $2, $3, $4, $5::jsonb)
@@ -498,6 +547,46 @@ router.post('/:platform', async (req, res) => {
 
 module.exports = router;
 ```
+
+**注意 `systemPool` 这个改动——它不是可选的。**
+
+**这条 `insert` 的参数里有个 `|| null`：**
+
+```js
+normalized.tenantId || conf.tenantId || null
+```
+
+**也就是说，如果两个都拿不到，它插的就是 `tenant_id = null`。**
+
+**而我们在 1.1 把策略改成了 `to app_user` 且 `with check (tenant_id = ...current_setting...)`——** **`current_setting` 没设值时是 `null`，`null = null` 在 SQL 里不成立（返回 `null`，当作假）。**
+
+**所以用 `app_user` 插 `tenant_id = null` 会被直接拒绝：**
+
+```text
+ERROR:  new row violates row-level security policy for table "platform_events"
+```
+
+**改成 `systemPool` 才能插进去。**
+
+**这就是"两条连接各有分工"的具体样子：**
+
+```text
+systemPool  → 收件箱（可能没有租户）  → 能写 null
+pool        → 业务读写（一定有租户）  → 只能写自己租户
+```
+
+**同时改一下顶部的 `require`：**
+
+```js
+const express = require('express');
+const systemPool = require('../db/system-pool');
+const { verifyFeishu, verifyWecom, verifyDingtalk } = require('../platform/verify');
+const { normalizeIncoming } = require('../platform/adapter');
+```
+
+**把 `const pool = require('../db/pool');` 整个换成 `systemPool`。** **这个文件里所有 SQL 都是"回调路径"的，本来就都在"还不知道租户"的阶段。**
+
+**（如果你后面在这个文件里加了别的查询，注意区分：读业务数据要用 `withTenantFromPool`，不能用这里的 `systemPool`。）**
 
 ## 2.4 六个关键点
 
@@ -894,12 +983,28 @@ worker B：update status=processing   ← 覆盖，两个都处理
 
 ### `running` 标志防重入
 
+**这一段就是上面 `tick()` 的开头那五行（822—839 行），抽出来看：**
+
 ```js
 let running = false;
-async function tick() {
-  if (running) return { skipped: true };
+
+async function tick(limit = 10) {
+  if (running) return { skipped: true };   // ← 已经有在跑了，直接退出
   running = true;
-  ...
+
+  try {
+    const rows = await claimBatch(limit);
+    if (rows.length === 0) return { processed: 0 };
+
+    const results = [];
+    for (const row of rows) {
+      results.push(await processOne(row));
+    }
+
+    return { processed: results.length, results };
+  } finally {
+    running = false;                       // ← 必须放 finally
+  }
 }
 ```
 
@@ -908,6 +1013,10 @@ async function tick() {
 **如果一次 `tick` 花了 3 秒，而间隔是 2 秒，就会有两次 `tick` 并发跑。**
 
 **`running` 标志让第二次直接跳过。**
+
+**`running = false` 必须在 `finally` 里。** **放在 `try` 末尾的话，`claimBatch` 抛错时 `running` 永远是 `true`——** **worker 从此彻底停摆，而且日志里只有一条错误，看起来"只失败了一次"。**
+
+**这是"进程还活着但什么都不干"的典型症状。** **遇到"队列一直不消费"，先看这个标志是不是卡住了。**
 
 **这是最简单有效的防重入。** 比引入锁库轻量得多。
 
@@ -1217,13 +1326,31 @@ loadAppConf 抛错 → 未捕获 → Express 的默认错误处理 → 500
 
 **这暴露了一个问题：`loadAppConf` 没有 try/catch。**
 
-**修：**
+**改 `src/webhook/receiver.js` 里的 `loadAppConf`（388—408 行），整个换成这版：**
 
 ```js
 async function loadAppConf(platform) {
   try {
-    const { rows } = await pool.query(...);
-    ...
+    const { rows } = await pool.query(
+      `select tenant_id, app_id, app_secret_enc, verify_token, encrypt_key
+       from platform_apps
+       where platform = $1 and status = 'active'
+       order by last_ok_at desc nulls last
+       limit 1`,
+      [platform]
+    );
+
+    if (rows.length === 0) return null;
+
+    const { decrypt } = require('../crypto/secret-box');
+
+    return {
+      tenantId: rows[0].tenant_id,
+      appId: rows[0].app_id,
+      appSecret: decrypt(rows[0].app_secret_enc),
+      verifyToken: rows[0].verify_token,
+      encryptKey: rows[0].encrypt_key,
+    };
   } catch (err) {
     console.error('[webhook] 读配置失败', err.message);
     return { error: 'DB_DOWN' };
@@ -1231,15 +1358,31 @@ async function loadAppConf(platform) {
 }
 ```
 
-**然后路由里：**
+**然后路由里那段判断（419—422 行）也一起改，因为现在有两个"没配置好"的原因：**
 
 ```js
-if (!conf || conf.error === 'DB_DOWN') {
-  return res.status(503).json({ error: 'temporarily unavailable' });
-}
+  const conf = await loadAppConf(platform);
+
+  if (!conf) {
+    console.error('[webhook] 没有 ' + platform + ' 的应用配置');
+    return res.status(503).json({ error: 'platform app not configured' });
+  }
+
+  if (conf.error === 'DB_DOWN') {
+    return res.status(503).json({ error: 'temporarily unavailable' });
+  }
+```
+
+**两个都要返回 503，但日志不一样：**
+
+```text
+没有配置  → 这是配置问题，你要去补 platform_apps 表
+读库失败  → 这是故障，平台重试几次可能就好了
 ```
 
 **503 是"服务暂时不可用"，平台会重试。这是正确的语义。**
+
+**为什么不返回 500：** **500 在大多数平台的约定里是"你的代码崩了，别重试"。** **数据库闪断恰恰应该重试——返回 500 等于主动放弃这条事件。**
 
 **把数据库改回来。**
 
@@ -1251,24 +1394,37 @@ if (!conf || conf.error === 'DB_DOWN') {
 
 ## 5.1 记录耗时
 
-**在回调路由里加：**
+**改 `src/webhook/receiver.js`。三处改动。**
+
+**第一处：`router.post('/:platform', async (req, res) => {` 之后第一行加：**
 
 ```js
-const started = Date.now();
-
-// ... 所有处理 ...
-
-const elapsed = Date.now() - started;
-res.setHeader('X-Process-Time-Ms', String(elapsed));
-
-if (elapsed > 1000) {
-  console.warn('[webhook] 回调耗时过长', elapsed + 'ms', platform, normalized.eventId);
-}
-
-return res.status(200).json({ ok: true });
+router.post('/:platform', async (req, res) => {
+  const started = Date.now();
+  const platform = req.params.platform;
 ```
 
+**第二处：找到最后那个成功返回（`catch` 块之后那句），换成三行：**
+
+```js
+    const elapsed = Date.now() - started;
+
+    res.setHeader('X-Process-Time-Ms', String(elapsed));
+
+    if (elapsed > 1000) {
+      console.warn('[webhook] 回调耗时过长', elapsed + 'ms', platform, normalized.eventId);
+    }
+
+    return res.status(200).json({ ok: true, duplicated: inserted.rowCount === 0 });
+```
+
+**第三处：`database is down` 那个 503 分支不动。** **失败路径不需要耗时头——你测的是"成功时有多快"，不是"失败时有多快"。**
+
 **`X-Process-Time-Ms` 这个响应头让假平台能读到耗时。**
+
+**用自定义头而不是只打日志，原因很简单：** **假平台是另一个进程，它读不到你的日志，但读得到响应头。**
+
+**这类"把内部数字暴露在想看的人手上"的做法，第 22 周做性能时还会再用一次（`Server-Timing` 头）。** **所有可观测性的起点都是同一个思路：让下游能看见你的内部数字。**
 
 **改假平台，把耗时打印出来（它已经在做了）。**
 

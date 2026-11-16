@@ -67,13 +67,55 @@ app.post("/api/avatar", upload.single("file"), (req, res) => {
 
 ---
 
+# 开工卡：这一节在哪台机器、哪个目录做
+
+> **每节开始前先读这张卡。** 环境和你的实际情况不一致，就先解决环境，别往下看。
+
+| 问题 | 答案 |
+|---|---|
+| **在哪台机器** | **只有你的 Windows 电脑。** 这一节要传恶意文件，**只传进自己的 lab**。 |
+| **用哪个终端** | **Git Bash。** |
+| **现在在哪个目录** | <code>mkdir -p "B:/OPC-Distance_study/每周课程/06-上线运维/第33周-安全与合规/第05节课/03-练习代码/upload-lab/payloads"</code><br><code>cd "B:/OPC-Distance_study/每周课程/06-上线运维/第33周-安全与合规/第05节课/03-练习代码/upload-lab"</code> |
+| **本节新建什么** | `upload-lab/server.js`（有洞版 + 修好版）<br>`upload-lab/payloads/evil.html`、`evil.svg`、`big.bin`<br>`upload-lab/attacks.md`（七种攻击的前后对比）<br>`上传体检.md`（正式项目里每处收文件的地方） |
+
+## 开工前先跑这一条
+
+确认你没站错地方：
+
+```bash
+node -v && mkdir -p public/uploads storage/uploads && ls
+```
+
+**应该看到：**
+
+```text
+v22.22.2
+payloads
+public
+storage
+```
+
+**注意：`public/uploads`（web 根里，有洞）和 `storage/uploads`（web 根外，安全）两个都建。** 这一节就是要对比这两个位置。
+
+## 如果不对
+
+**`mkdir` 报已存在** → 正常，`-p` 就是为这个。
+
+---
+
 # 第 1 步：先造一个"能用的"上传接口（20 分钟）
 
 ## 1.1 建实验场
 
+**先确认你在 `upload-lab/` 里**（开工卡已经带你进来了）：
+
 ```bash
-mkdir -p 03-练习代码/upload-lab
-cd 03-练习代码/upload-lab
+pwd
+```
+
+**路径最后必须是 `upload-lab`。** 如果不对，回开工卡重跑。
+
+```bash
 npm init -y
 npm install express multer
 ```

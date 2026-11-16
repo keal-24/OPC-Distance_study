@@ -2,7 +2,7 @@
 
 > 这节课结束时，你手上有：`rag-app\search-hybrid.js`（关键词 + 向量融合，RRF 排序）、`rag-app\eval.js`（一套能重复跑的评测）、`rag-app\out\compare.md`（三种检索在 10 个问题上的完整对比 + 你的结论），以及一个能对外交付的资料问答应用。
 
-**时间**：约 120 分钟
+**建议用时**：120 分钟
 **前置**：第 90 节课的 `ask.js` 和 `out\ask-log.md`，第 87 节课的 `out\keyword-baseline.md`
 
 ---
@@ -173,7 +173,7 @@ k=60  → 第 1 名 1/61=0.0164，第 2 名 1/62=0.0161，第 10 名 1/70=0.0143
 **1.** 进项目：
 
 ```text
-cd /d "B:\OPC-Distance_study\每周课程\03-数据与智能\第13周-检索与RAG\第07节课\03-练习代码"
+cd "B:\OPC-Distance_study\每周课程\03-数据与智能\第13周-检索与RAG\第07节课\03-练习代码"
 xcopy /E /I /Y "..\第06节课\03-练习代码\rag-app" rag-app
 cd rag-app
 ```

@@ -130,15 +130,19 @@ git push --force                  覆盖远程历史
 明确排除，避免你分心：
 
 ```text
-git rebase              第 4 阶段（工程可靠性）
-git bisect              第 4 阶段（找哪个提交引入 bug）
+git rebase              自己分支同步 main 时用 → 参考手册/04-Git操作手册.md 第八节
+git bisect              找哪个提交引入 bug → 参考手册/04-Git操作手册.md 第八节
 git worktree            用不到
 git submodule           用不到
 图形化 Git 客户端       会用命令行之后自然就会
-GitHub Actions / CI     第 6 阶段（上线运维）
-Pull Request 流程       第 4 阶段会专门讲协作
-提交规范（Conventional Commits）  第 4 阶段
+GitHub Actions / CI     第 6 阶段（上线运维，第 30 周）
+Pull Request 流程       一个人做项目时当"改动说明书" → 参考手册/04-Git操作手册.md 第八节
+提交规范（Conventional Commits）  参考手册/04-Git操作手册.md 第八节
 ```
+
+**这四件不在课上练，但都写在手册里了。** 想用的时候翻第八节，别去搜博客——搜出来的版本对不上你的 Git。
+
+**为什么不放课上**：这一周的时间全花在"开分支、解冲突、回滚"上，那三样是每天都要用的。rebase 和 bisect 一个月用不上一次，**学了也会忘，等真遇到再翻**。
 
 **这一周只用命令行。** 因为报错信息全在命令行里，图形界面会把它藏起来。**你必须先看懂报错。**
 

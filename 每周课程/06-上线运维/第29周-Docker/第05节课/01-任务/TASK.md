@@ -62,6 +62,45 @@ bind mount ：你指定路径，Docker 照着挂
 
 ---
 
+# 开工卡：这一节在哪台机器、哪个目录做
+
+> **每节开始前先读这张卡。** 环境和你的实际情况不一致，就先解决环境，别往下看。
+
+| 问题 | 答案 |
+|---|---|
+| **在哪台机器** | **你的 Windows 电脑。** |
+| **用哪个终端** | **Git Bash。** |
+| **现在在哪个目录** | <code>cd "B:/OPC-Distance_study/每周课程/06-上线运维/第29周-Docker/第05节课/03-练习代码/chat-app-docker"</code> |
+| **本节新建什么** | `数据卷笔记.md`（贴 volume 和 bind mount 两种实验的输出） |
+
+## 开工前先跑这一条
+
+确认你没站错地方：
+
+```bash
+ls data/ 2>/dev/null; echo "---"; docker volume ls
+```
+
+**应该看到：**
+
+```text
+messages.json
+---
+DRIVER    VOLUME NAME
+```
+
+**关键：`data/` 里有 `messages.json`。** 这是你要弄丢一次又救回来的东西。
+
+（`docker volume ls` 现在是空的，第 6 节才会有 `pg-data`。）
+
+## 如果不对
+
+**`data/` 不存在** → 你的项目还没产生过消息，先在原项目里发一条再复制。
+
+**`.dockerignore` 里没有 `data`** → 第 2 节的 `.dockerignore` 没写对，先补上。
+
+---
+
 # 第 1 步：先复现"数据没了"（20 分钟）
 
 ## 1.1 看一眼你的数据结构
@@ -1258,7 +1297,7 @@ Error: Cannot find module 'express'
 Require stack:
 - /app/server.js
 
-Node.js v20.18.0
+Node.js v22.22.2
 ```
 
 **为什么：**

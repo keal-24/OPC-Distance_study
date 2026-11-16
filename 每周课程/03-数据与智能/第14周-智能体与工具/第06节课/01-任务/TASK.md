@@ -2,7 +2,7 @@
 
 > 这节课结束时，你手上有：`第06节课/03-练习代码/agent/permission.js`、`confirm.js`，以及带权限门的 `agent.js`——只读工具直接跑，写操作必须你输入 `yes`，黑名单工具根本走不到执行。
 
-**时间**：约 110 分钟
+**建议用时**：110 分钟
 **前置**：第 96 节课做出来的 `agent.js`（主循环、三个停止条件、`stopReason`）
 
 ---
@@ -87,7 +87,7 @@ copy data\app.db data\app.db.bak
 ## 1.2 操作
 
 ```text
-cd /d B:\OPC-Distance_study\每周课程\03-数据与智能\第14周-智能体与工具
+cd "B:\OPC-Distance_study\每周课程\03-数据与智能\第14周-智能体与工具"
 xcopy 第05节课\03-练习代码\agent 第06节课\03-练习代码\agent /E /I
 cd 第06节课\03-练习代码\agent
 copy data\app.db data\app.db.bak

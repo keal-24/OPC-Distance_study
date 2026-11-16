@@ -4,7 +4,8 @@
 > 上节课你做出了第一个页面。如果你照着自己的习惯写，`orders.html` 里现在有 200 行 HTML、150 行 CSS、200 行 JS 混在一起。
 > **再加三个页面，你就会开始复制粘贴；加五个页面，改一个样式要改五处。**
 
-**建议用时**：140 分钟
+**建议用时**：160 分钟（6 个步骤，含动手敲代码的时间）
+**时间怎么排**：一次做不完是正常的。建议分两次：第 0—2 步（85 分钟）一次，第 3—5 步（75 分钟）一次。每个步骤标题后面的括号就是该步的分钟数。
 **你需要先完成**：第 183 节（`orders.html` 在 375px 下能用）
 
 ---
@@ -957,12 +958,38 @@ if (筛选后为空)    { 空状态（不同文案）; return; }
 
 ### 事件委托
 
+**看 `bind()` 那一段（892—909 行）：**
+
 ```js
-document.getElementById('app').addEventListener('click', (e) => {
-  const el = e.target.closest('[data-action]');
-  ...
-});
+function bind() {
+  document.getElementById('app').addEventListener('click', (e) => {
+    const el = e.target.closest('[data-action]');
+    if (!el) return;
+
+    const action = el.dataset.action;
+
+    if (action === 'refresh' || action === 'reload') {
+      load();
+      return;
+    }
+
+    if (action === 'filter') {
+      state.filter = el.dataset.filter;
+      renderMain();
+    }
+  });
+}
 ```
+
+**`e.target.closest('[data-action]')` 是这四行的核心。**
+
+**点到的可能是按钮里的图标、图标里的 `<path>`。** **`e.target` 是那个最里层的元素，它身上没有 `data-action`。**
+
+**`closest()` 往上找，找到最近的带 `data-action` 的祖先。**
+
+**没有 `closest()` 就得写"往上爬 parentNode 直到找到"的循环，还要处理爬到顶的情况。**
+
+**`if (!el) return;` 不能省。** **客户点空白处时 `closest()` 返回 `null`，下一行 `el.dataset` 直接抛 `Cannot read properties of null`。**
 
 **为什么不用给每个按钮 `addEventListener`：**
 

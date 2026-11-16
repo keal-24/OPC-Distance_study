@@ -78,6 +78,44 @@ test ✅ → build ✅ → deploy ✅ → ？
 
 ---
 
+# 开工卡：这一节在哪台机器、哪个目录做
+
+> **每节开始前先读这张卡。** 环境和你的实际情况不一致，就先解决环境，别往下看。
+
+| 问题 | 答案 |
+|---|---|
+| **在哪台机器** | **两台机器：你的 Windows + 那台 Linux（同第 208 节）。** |
+| **用哪个终端** | **两个 Git Bash 窗口**，一个本地一个服务器，和第 208 节一样。 |
+| **现在在哪个目录** | **窗口 A（本地）：**<br><code>cd "B:/OPC-Distance_study/每周课程/06-上线运维/第30周-持续集成与部署/第01节课/03-练习代码/ci-lab"</code><br>**窗口 B（服务器）：**<br><code>cd /srv/app</code> |
+| **本节新建什么** | `/srv/app/rollback.sh`（服务器）<br>`.github/workflows/pipeline.yml`（本地）<br>`回滚演练.md`（贴 `ps` 前后两次输出） |
+
+## 开工前先跑这一条
+
+确认你没站错地方：
+
+```bash
+docker compose ps; echo "---"; cat .current_sha 2>/dev/null || echo "还没有 .current_sha"
+```
+
+**应该看到：**
+
+```text
+NAME           IMAGE                     STATUS
+ci-lab-app     ghcr.io/...:sha-a1b2c3d  Up 2 hours
+---
+a1b2c3d
+```
+
+**或者第二段是 `还没有 .current_sha`** —— 那是第 208 节的 `deploy.sh` 还没升级成「会记录上一版」的版本，这一节第 2 步就做这件事。
+
+## 如果不对
+
+**`docker-compose.yml` 不在** → 第 208 节没做完，回去补。
+
+**`docker compose ps` 是空的** → 容器没在跑，先跑一次第 208 节的 `./deploy.sh`。
+
+---
+
 # 第 1 步：先画出整条线（15 分钟）
 
 ## 1.1 五个 job，四条依赖
@@ -679,7 +717,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
           cache: 'npm'
 
       - run: npm ci
@@ -1586,7 +1624,7 @@ docker image prune -f --filter "until=168h" || true
 
 ```text
 -a 会删掉所有"没被使用"的镜像
-包括你的基础镜像 node:20-alpine
+包括你的基础镜像 node:22-alpine
 包括上一个版本（如果暂时没容器用它）
 下次部署要重新下载 50MB+
 ```

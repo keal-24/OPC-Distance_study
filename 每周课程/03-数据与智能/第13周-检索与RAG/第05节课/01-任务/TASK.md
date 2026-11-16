@@ -2,7 +2,7 @@
 
 > 这节课结束时，你手上有：`rag-app\lib\embed.js`（假向量和真接口两个实现，改 `.env` 一行切换）、`rag-app\build-vectors.js`（给 10 个块建向量）、`rag-app\search-vector.js`（和 `searchKeyword` 同一个签名）、`rag-app\out\vector-baseline.md`（向量版基线）。
 
-**时间**：约 120 分钟
+**建议用时**：120 分钟
 **前置**：第 88 节课的 `tools\cosine.js` 和 `normalize`；第 87 节课的 `search-keyword.js`
 
 ---
@@ -167,7 +167,7 @@
 **1.** 进项目：
 
 ```text
-cd /d "B:\OPC-Distance_study\每周课程\03-数据与智能\第13周-检索与RAG\第05节课\03-练习代码"
+cd "B:\OPC-Distance_study\每周课程\03-数据与智能\第13周-检索与RAG\第05节课\03-练习代码"
 xcopy /E /I /Y "..\第04节课\03-练习代码\rag-app" rag-app
 cd rag-app
 mkdir lib

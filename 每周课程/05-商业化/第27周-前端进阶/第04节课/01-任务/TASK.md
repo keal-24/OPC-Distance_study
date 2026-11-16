@@ -4,7 +4,8 @@
 > 上一节让客户知道"系统在干什么"。这一节让客户知道"**我填错了什么**"。
 > 表单是客户跟你交互最密集的地方，**也是客户脾气最差的地方**——他已经决定要用了，你却在最后一步折磨他。
 
-**建议用时**：140 分钟
+**建议用时**：160 分钟（6 个步骤，含动手敲代码的时间）
+**时间怎么排**：一次做不完是正常的。建议分两次：第 0—2 步（95 分钟）一次，第 3—5 步（65 分钟）一次。每个步骤标题后面的括号就是该步的分钟数。
 **你需要先完成**：第 185 节（四态跑通，按钮加载态和就近报错能用）
 
 ---
@@ -688,12 +689,44 @@ console.log(R.email('a@b.com'));         // null
 
 ### 实时预览总金额
 
+**这段代码在 `order-new.js` 里已经有了（578—596 行）。这里拆开讲清楚：**
+
 ```js
 function updatePreview() {
   const qty = Number(form.get('quantity') || 0);
+  const price = String(form.get('unit_price') || '').replace(/[,¥￥\s]/g, '');
   const cents = Math.round(Number(price) * 100) || 0;
-  ...
+  const box = document.getElementById('preview');
+  if (!box) return;
+
+  if (!qty || !cents) {
+    box.innerHTML = '<div class="list__meta">总金额会在填完后显示</div>';
+    return;
+  }
+
+  box.innerHTML = `
+    <div class="row row--between">
+      <span class="list__meta">总金额</span>
+      <span class="list__amount">${money(qty * cents)}</span>
+    </div>
+  `;
 }
+```
+
+**三处要注意：**
+
+```text
+① .replace(/[,¥￥\s]/g, '')   客户会粘贴"¥1,299.00"，先把符号和空格去掉
+② Math.round(x * 100)        999.99 * 100 在浮点数里是 99998.99999，不 round 会少 1 分
+③ if (!box) return;          预览框可能不在当前页面（比如复用了这个 js），先判空
+```
+
+**第 ② 条是这一节唯一一个"不算就出错"的地方。**
+
+```js
+999.99 * 100            // 99998.99999999999
+Math.trunc(999.99*100)  // 99998  ← 少一分，客户会投诉
+Math.round(999.99*100)  // 99999  ← 对
 ```
 
 **客户填了数量和单价，立刻看到"总金额 ¥3,897.00"。**
@@ -899,12 +932,30 @@ if (raw.length > 120) {
 
 **`friendly()` 只管显示。** **原始错误要在 `api.js` 里 `console.error` 一次。**
 
+**找到 `public/js/api.js` 里 `if (!res.ok) {` 那一段，在最前面加一行：**
+
 ```js
-if (!res.ok) {
-  console.error('[api]', path, res.status, body);
-  ...
-}
+    if (!res.ok) {
+      console.error('[api]', path, res.status, body);   // ← 加这一行
+      const message =
+        (body && body.error) ||
+        (res.status === 401 ? '登录已过期，请重新登录' : `请求失败（${res.status}）`);
 ```
+
+**不要只写 `console.error(err)` 就完了。** **把 `path`、`res.status`、`body` 三个分开写，控制台里才是这个样子的：**
+
+```text
+[api] /api/orders 409 {error: "这个订单号已经存在", code: "DUPLICATE_ORDER_NO"}
+```
+
+**而不是：**
+
+```text
+Error: 这个订单号已经存在
+    at request (api.js:38)
+```
+
+**第一行能让你三秒内知道"哪个接口、什么状态码、后端的原始回复"。** **第二行你得自己猜。**
 
 **不加的话，客户说"出错了"，你在控制台里什么都看不到。**
 

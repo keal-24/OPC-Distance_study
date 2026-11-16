@@ -2,7 +2,7 @@
 
 > 这节课结束时，你手上有：`第04节课/03-练习代码/collector/fetch-pages.js`（三种分页各抓一遍，都得到 30 条）、`collector/state.json`（断点续抓的状态文件）、`collector/items-paged.json`（抓全的 30 条）。
 
-**时间**：约 120 分钟
+**建议用时**：120 分钟
 **前置**：第 73 节课的 `collector` 项目（会用 cheerio 抽字段，会写检查点）
 
 ---
@@ -89,7 +89,7 @@
 **1.** 把上一节的项目复制过来（`node_modules` 一起带，省一次安装）：
 
 ```text
-cd /d "B:\OPC-Distance_study\每周课程\03-数据与智能\第11周-数据采集\第04节课\03-练习代码"
+cd "B:\OPC-Distance_study\每周课程\03-数据与智能\第11周-数据采集\第04节课\03-练习代码"
 xcopy /E /I /Y "..\第03节课\03-练习代码\collector" collector
 cd collector
 del grab-html.js parse-manual.js parse-cheerio.js selector-test.js raw-list.html raw-v2.html

@@ -66,6 +66,45 @@
 
 ---
 
+# 开工卡：这一节在哪台机器、哪个目录做
+
+> **每节开始前先读这张卡。** 环境和你的实际情况不一致，就先解决环境，别往下看。
+
+| 问题 | 答案 |
+|---|---|
+| **在哪台机器** | **两个地方：**<br><code>① 你的 Windows：查 Git 历史、改本地配置</code><br><code>② 服务器：改 .env 权限、查有没有泄露</code> |
+| **用哪个终端** | **Git Bash 本地 + Git Bash（SSH 到服务器）。**<br>查 Git 历史必须用 Git Bash（`grep` / `git log -p` 在 PowerShell 里不全）。 |
+| **现在在哪个目录** | **本地：**<br><code>cd "B:/OPC-Distance_study/每周课程/06-上线运维/第33周-安全与合规/第01节课/03-练习代码"</code><br>**服务器（后面几步）：**<br><code>ssh root@你的服务器IP</code><br><code>cd /srv/app</code> |
+| **本节新建什么** | `密钥清单.md`（每把钥匙：用途、存在哪、谁能读、**吊销入口**、轮换周期）<br>`泄露检查.md`（四条泄露路径的检查结果） |
+
+## 开工前先跑这一条
+
+确认你没站错地方：
+
+```bash
+git log --all --oneline -- .env
+```
+
+**应该看到：**
+
+**应该是空的（什么都没有）。**
+
+如果输出类似：
+
+```text
+a1b2c3d 添加环境变量
+```
+
+**那就是 `.env` 进过 Git 历史。** 别慌，但也别继续往下做 —— 先按这一节第 2 步的顺序处理（**先吊销 → 再换 → 最后才清历史**）。
+
+## 如果不对
+
+**`fatal: not a git repository`** → 你没在项目目录里，先 `cd` 到你的 `chat-app`。
+
+**有两三个提交记录** → 真事故，认真处理。
+
+---
+
 # 第 1 步：先数清楚你有几把钥匙（20 分钟）
 
 ## 1.1 为什么先列表再查代码
@@ -144,12 +183,26 @@ SSH 密钥        服务器上删 ~/.ssh/authorized_keys 里那一行
 
 ## 2.2 先查"现在"
 
+**先确认你的项目在你电脑上的哪里。** 课程里统一用 `你的项目目录` 指代，你需要换成真实路径。
+
+**如果你不确定路径，用这个办法找：** 打开那个项目文件夹 → 在地址栏里敲 `cmd` 回车 → 弹出的窗口里敲 `pwd`（Git Bash）或 `cd`（cmd），出来的就是路径。
+
+**下面是示例路径（假设你把项目放在 `B:/项目/chat-app`），换成你自己的：**
+
 ```bash
-cd /b/OPC-Distance_study/项目/chat-app
-git ls-files | grep -i env
+cd "/b/项目/chat-app"
+pwd
 ```
 
-**注意：** Git Bash 里盘符写成 `/b/...`，不是 `B:\...`。
+**`pwd` 输出应该是 `你项目目录` 的样子，不带 `.` 或 `..`。**
+
+**注意：** Git Bash 里盘符这样写 —— `B:/项目/chat-app` 或 `/b/项目/chat-app` 都行，**但不要写 `B:\项目\chat-app`**（反斜杠在 Git Bash 里是转义符）。
+
+**现在查被跟踪的文件：**
+
+```bash
+git ls-files | grep -i env
+```
 
 **应该看到（干净的情况）：**
 
@@ -158,6 +211,8 @@ git ls-files | grep -i env
 ```
 
 **看到 `.env`、`.env.local`、`.env.production`、`config/.env` 任何一个都是问题。**
+
+**如果 `git ls-files` 报了 `fatal: not a git repository`：** 你不在项目目录里，或者这个项目还没 `git init`。先 `ls -a` 看一下有没有 `.git`。
 
 **逐行读：**
 
@@ -592,7 +647,7 @@ clone 过的那份，你永远收不回来。
 **⚠️ 下面这条命令会重写整个仓库历史，所有提交哈希都会变。做之前必须备份。**
 
 ```bash
-cd /b/OPC-Distance_study/项目
+cd "/b/项目"          # 换成你项目所在的那一层目录
 git clone --mirror chat-app chat-app-backup.git
 ```
 
@@ -631,7 +686,9 @@ pwd
 git filter-repo --path .env --invert-paths
 ```
 
-**`pwd` 应该在 `/b/OPC-Distance_study/项目/chat-app`。**
+**`pwd` 必须显示你在项目根目录里（就是刚才 `cd "/b/项目/chat-app"` 进的那个）。**
+
+**如果 `pwd` 显示的不是项目根目录，先 `cd` 回去再跑第二行。** 在错的目录跑 filter-repo，会改错仓库 —— 而它不可撤销。
 
 **清理应该看到：**
 

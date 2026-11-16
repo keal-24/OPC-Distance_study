@@ -2,7 +2,7 @@
 
 > 这节课结束时，你手上有：`mm-app\lib\errors.js`（六类错误的识别码 + 用户话术 + 是否重试）、`mm-app\lib\retry.js`（指数退避，只重试该重试的）、`mm-app\lib\error-middleware.js`（Express 统一出口）、`mm-app\out\error-matrix.md`（错误矩阵）。
 
-**时间**：约 115 分钟
+**建议用时**：115 分钟
 **前置**：第 103 节课的 `mm-app`（看图、生图、听音、说话四条链路都跑通）
 
 ---
@@ -130,7 +130,7 @@ CONTENT_FILTER 是 HTTP 200！
 **1.** 进项目：
 
 ```text
-cd /d "B:\OPC-Distance_study\每周课程\03-数据与智能\第15周-多模态\第06节课\03-练习代码"
+cd "B:\OPC-Distance_study\每周课程\03-数据与智能\第15周-多模态\第06节课\03-练习代码"
 xcopy /E /I /Y "..\第05节课\03-练习代码\mm-app" mm-app
 cd mm-app
 ```

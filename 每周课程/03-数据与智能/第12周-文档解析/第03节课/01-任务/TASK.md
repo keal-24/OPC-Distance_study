@@ -2,7 +2,7 @@
 
 > 这节课结束时，你手上有：`src\read-table.js`，一个自己手写的 CSV 解析器，加一个 exceljs 的 xlsx 读取器，两者都输出同一种结构 `[{列名: 值}]`。
 
-**时间**：约 110 分钟
+**建议用时**：110 分钟
 **前置**：第 79 节课做出来的 `src\read-text.js`，以及能区分编码的 `decodeBuffer()`
 
 ---
@@ -108,7 +108,7 @@ Sheet2 改名 "明细"
 ## 1.2 操作
 
 ```text
-cd /d B:\OPC-Distance_study\每周课程\03-数据与智能\第12周-文档解析\第03节课\03-练习代码
+cd "B:\OPC-Distance_study\每周课程\03-数据与智能\第12周-文档解析\第03节课\03-练习代码"
 xcopy "..\..\第02节课\03-练习代码\doc-parser" "doc-parser" /E /I /Y
 cd doc-parser
 npm install exceljs

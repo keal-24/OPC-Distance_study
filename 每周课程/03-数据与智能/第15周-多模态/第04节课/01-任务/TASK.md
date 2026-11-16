@@ -2,7 +2,7 @@
 
 > 这节课结束时，你手上有：`mm-app\lib\audio-info.js`（不装包读音频格式和时长）、`mm-app\lib\transcribe.js`（短音频 + 长音频两条路径，含假实现）、`mm-app\scripts\transcribe-lab.js`（三段音频对照）、`mm-app\out\transcribe-log.md`（识别结果 + 同音字错例表）。
 
-**时间**：约 115 分钟
+**建议用时**：115 分钟
 **前置**：第 101 节课的 `mm-app`（`lib/config.js` 里已有 `STT_MODEL` 和 `UPLOAD_DIR`）
 
 ---
@@ -147,7 +147,7 @@ MP3 没有"总时长"这个字段
 **1.** 进项目：
 
 ```text
-cd /d "B:\OPC-Distance_study\每周课程\03-数据与智能\第15周-多模态\第04节课\03-练习代码"
+cd "B:\OPC-Distance_study\每周课程\03-数据与智能\第15周-多模态\第04节课\03-练习代码"
 xcopy /E /I /Y "..\第03节课\03-练习代码\mm-app" mm-app
 cd mm-app
 ```

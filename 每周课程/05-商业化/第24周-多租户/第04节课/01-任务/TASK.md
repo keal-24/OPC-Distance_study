@@ -4,7 +4,8 @@
 > 上一节解决了"租户身份从哪来"。这一节解决"每条 SQL 怎么保证带上了它"。
 > **答案是：不靠自觉，靠结构。** 手写 `WHERE tenant_id = $1` 一定会漏，早晚的事。
 
-**建议用时**：130 分钟
+**建议用时**：190 分钟（7 个步骤，含动手敲代码的时间）
+**时间怎么排**：这一节偏长，建议分三次：第 0—2 步（60 分钟）→ 第 3—4 步（40 分钟）→ 第 5—6 步（90 分钟）。第二次断开之前 `npm run check` 应该是绿的；第三次断开之前 `rls-test.js` 应该全部通过。这两个都是很好的检查点。
 **你需要先完成**：第 164 节课（注册登录能跑，`/api/me` 正常）
 
 ---
@@ -54,14 +55,19 @@
 | 靠自觉：每条 SQL 自己记得写 `where tenant_id = $1` | 300 处里漏 3 处，半年后发现 |
 | 靠结构：查询只能从一个入口出，入口自己带上租户 | 想漏也漏不掉 |
 
-**这一节做第二种。具体是两层：**
+**这一节做第二种。具体是两层半：**
 
 ```text
-第一层（代码）：所有查询走 forTenant()，路由里根本拿不到原始连接池
+第一层（代码）：所有查询走 withTenant()，路由里根本拿不到原始连接池
 第二层（数据库）：行级安全（RLS），绕过第一层也读不到
+那"半层"：一条受控的系统连接，只给"还不知道租户是谁"的那几处用
 ```
 
-**两层都做。** 不是不信任自己的代码，是**代码会被改，包括被 AI 改。**
+**前两层都做，第三层是被迫的。**
+
+**不是不信任自己的代码，是代码会被改，包括被 AI 改。**
+
+**那"半层"是这一节最反直觉的部分：** **RLS 不是"加上就完事"——它会让"登录"这个动作直接失效，因为登录的本质就是从零确定身份，而 RLS 要求你先知道身份。** **5.5 节专门处理这个矛盾。**
 
 ---
 
@@ -598,7 +604,7 @@ grep -rn "pool.query" src/routes/
 
 ---
 
-# 第 4 步：加一个检查脚本，防止以后退回去（15 分钟）
+# 第 4 步：加一个检查脚本，防止以后退回去（20 分钟）
 
 **规矩写在文档里没用，写成脚本才有用。** 因为三个月后你会忘，AI 更不知道有这条规矩。
 
@@ -677,7 +683,78 @@ node scripts/check-tenant.js
 
 **删掉，别留。**
 
-## 4.3 加到 `package.json`
+## 4.3 再加一段：把 `systemPool` 全部列出来
+
+**第 5.4 节引入了 `systemPool`——一个合法的越权入口。**
+
+**它能不能用对，全靠你记得"哪几处是故意的"。** **所以脚本要反过来做一件事：不报错，只列清单。**
+
+**在 `check-tenant.js` 末尾（`process.exitCode` 那段之前）加：**
+
+```js
+// systemPool 是"合法的越权"，不禁止，但必须让人看见
+const srcDir = path.join(__dirname, '..', 'src');
+const uses = [];
+
+function walk(dir) {
+  for (const name of fs.readdirSync(dir)) {
+    const full = path.join(dir, name);
+
+    if (fs.statSync(full).isDirectory()) {
+      walk(full);
+      continue;
+    }
+
+    if (!name.endsWith('.js')) continue;
+
+    const lines = fs.readFileSync(full, 'utf8').split('\n');
+
+    lines.forEach((line, i) => {
+      if (/systemPool\.(query|connect)/.test(line)) {
+        uses.push({
+          file: path.relative(srcDir, full).replace(/\\/g, '/'),
+          line: i + 1,
+          code: line.trim(),
+        });
+      }
+    });
+  }
+}
+
+walk(srcDir);
+
+console.log('\n— 绕过 RLS 的位置（每一条都要能说出理由）—');
+
+if (uses.length === 0) {
+  console.log('  （没有）');
+} else {
+  for (const u of uses) {
+    console.log(`  ${u.file}:${u.line}  ${u.code}`);
+  }
+}
+
+console.log(`  共 ${uses.length} 处`);
+```
+
+**跑一遍，你现在应该看到三处：**
+
+```text
+— 绕过 RLS 的位置（每一条都要能说出理由）—
+  middleware/auth.js:19  const { rows } = await systemPool.query(
+  routes/auth.js:31  const { rows } = await systemPool.query(
+  routes/auth.js:88  const client = await systemPool.connect();
+  共 3 处
+```
+
+**这三处正好对应 5.4 节那张表的前三行。** **数字对得上，说明你没有多开、也没有漏改。**
+
+**以后每加一处 `systemPool`，这个数字就 +1。** **加的时候你要能在心里回答一句："这里确实还不知道租户是谁。"**
+
+**回答不出来，就说明你写错了，应该用 `withTenant`。**
+
+**这个脚本不改 `exitCode`，只打印。** **因为它不是"错误"，是"需要人判断的地方"——工具不该替你判断安全边界，只该让边界清晰可见。**
+
+## 4.4 加到 `package.json`
 
 ```json
 {
@@ -703,7 +780,7 @@ node scripts/check-tenant.js
 
 ---
 
-# 第 5 步：第二层门 —— 数据库行级安全（30 分钟）
+# 第 5 步：第二层门 —— 数据库行级安全（75 分钟）
 
 **第一层门（仓储层）能挡住"正常写代码的自己"。但它挡不住两件事：**
 
@@ -752,26 +829,184 @@ create policy tenant_isolation on users
 npm run migrate
 ```
 
-## 5.2 这两个词必须理解，否则一定踩坑
+## 5.2 两个必须理解的词 + 一个会让你白折腾的坑
 
 ### `force row level security` —— 少了这一句，整段白写
 
 **默认情况下，RLS 对表的所有者（owner）不生效。**
-
-**你的应用连数据库用的就是 owner 账号（`postgres` 或云平台给的那个）。**
 
 ```sql
 -- 只写这句
 alter table messages enable row level security;
 ```
 
-**效果：策略建好了，但你的应用是 owner，**直接无视它**，该读到什么读到什么。**
+**效果：策略建好了，但你建表用的那个账号是 owner，**直接无视它**，该读到什么读到什么。**
 
 **你会以为 RLS 生效了，实际上一点用都没有。**
 
 **`force` 的意思就是"连 owner 也要受策略约束"。**
 
 **这个坑非常隐蔽：策略建了、语句没报错、查询也正常返回——只是隔离不存在。**
+
+### ⚠️ 但 `force` 对超级用户无效 —— 这一条会让你白折腾一小时
+
+**PostgreSQL 文档里有一句硬话：**
+
+```text
+Superusers and roles with the BYPASSRLS attribute
+always bypass the row security system when accessing a table.
+```
+
+**翻译：** **超级用户，以及带 `BYPASSRLS` 属性的角色，**永远**绕过 RLS——不管你有没有写 `force`。**
+
+**而第 162 节让你用 `postgres` 连的。`postgres` 就是超级用户。**
+
+**所以如果你的 `.env` 是：**
+
+```text
+DATABASE_URL=postgres://postgres:密码@localhost:5432/saas_lab
+```
+
+**那么你写一百个 `force`，策略一个都不会生效。**
+
+**具体表现：** **5.3 节那个验证脚本会输出**
+
+```text
+不设上下文能读到几条消息： 2      ← 而你期望是 0
+```
+
+**你会以为是 `force` 没生效，回去反复检查那五行 SQL——** **查半天也查不出来，因为问题不在 SQL，在"你用什么身份连的"。**
+
+**这是一个会让你怀疑自己的坑。** **先看清楚，再往下做。**
+
+## 5.3 先建两个数据库角色
+
+**既然超级用户永远绕过 RLS，那你的应用就不能用 `postgres` 连。**
+
+**建两个角色，各管一件事：**
+
+**用 `psql` 连上数据库（要用 `postgres` 身份，因为它有建角色的权限）：**
+
+```text
+psql -U postgres -d saas_lab
+```
+
+**然后逐段执行（`密码自己换`）：**
+
+```sql
+-- ① 应用角色：受 RLS 约束，日常业务全用它
+create role app_user login password '换成你的密码';
+
+grant connect on database saas_lab to app_user;
+grant usage on schema public to app_user;
+
+-- 现在库里已有的表
+grant select, insert, update, delete on all tables in schema public to app_user;
+grant usage, select on all sequences in schema public to app_user;
+
+-- 以后新建的表也自动授（必须写，否则每次加表都要手动 grant）
+alter default privileges in schema public
+  grant select, insert, update, delete on tables to app_user;
+alter default privileges in schema public
+  grant usage, select on sequences to app_user;
+```
+
+```sql
+-- ② 系统角色：绕过 RLS，只给"还不知道租户"的路径用
+create role app_system login password '换成另一个更长的密码' bypassrls;
+
+grant connect on database saas_lab to app_system;
+grant usage on schema public to app_system;
+
+alter default privileges in schema public
+  grant select, insert, update, delete on tables to app_system;
+alter default privileges in schema public
+  grant usage, select on sequences to app_system;
+```
+
+**三个关键点，每一个不加都会出问题：**
+
+**一、`app_user` 绝对不能有 `superuser` 或 `bypassrls`。**
+
+**这是整套设计的根基。** **有任何一个，RLS 就形同虚设。**
+
+**验证一下（这句很重要）：**
+
+```sql
+select rolname, rolsuper, rolbypassrls
+from pg_roles
+where rolname in ('app_user', 'app_system', 'postgres');
+```
+
+**期望：**
+
+```text
+ rolname    | rolsuper | rolbypassrls
+------------+----------+--------------
+ app_system | f        | t          ← 只有它是 t
+ app_user   | f        | f          ← 必须是 f / f
+ postgres   | t        | t
+```
+
+**如果 `app_user` 那行的 `rolsuper` 是 `t`，说明你建角色时写错了，删掉重建。**
+
+**二、`alter default privileges` 那两句不能省。**
+
+**它管的是"以后新建的表自动授权"。** **不写的话，你每加一张表都要手动 `grant` 一次——** **忘了就报 `permission denied for table xxx`。** **而且这个报错出现的时间点很随机（通常是跑到某节课中途），很难联想到权限。**
+
+**注意：`alter default privileges` 只对"执行这句之后新建的表"生效。** **前面已经建的表，靠上面那句 `on all tables` 授。**
+
+**三、`app_system` 给了 `bypassrls`，但不要给它 `superuser`。**
+
+**`bypassrls` 只做一件事：绕过行级安全。** **`superuser` 能做所有事，包括 `drop database`。**
+
+**最小权限：够用就行。**
+
+### 改 `.env`，从现在开始用 `app_user`
+
+```text
+DATABASE_URL=postgres://app_user:你的密码@localhost:5432/saas_lab
+SYSTEM_DATABASE_URL=postgres://app_system:另一个密码@localhost:5432/saas_lab
+```
+
+**两个连接串都改了。**
+
+**注意：** **`SYSTEM_DATABASE_URL` 是 5.4 节才要用的，但现在就写进 `.env`，避免到时候忘了。**
+
+**改完之后立刻验证：**
+
+```text
+npm run ping
+```
+
+**如果报：**
+
+```text
+error: permission denied for table schema_migrations
+```
+
+**说明 `grant ... on all tables` 没跑到，或者你在我给的 SQL 里漏了一段。回 `psql` 里重跑那两句 `grant`。**
+
+**这个报错本身就是个好消息：它证明你的应用连的确实不是超级用户了。** **超级用户不会有权限问题。**
+
+### 如果你用的是云端数据库
+
+**Neon / Supabase / Railway 给的那个连接串，用户一般**不是**超级用户。**
+
+**所以 RLS 会生效，但你可能没有权限建新角色。**
+
+**这种情况下的做法：**
+
+```text
+① 用平台给的那个用户当 app_user —— 通常它已经没有 bypassrls
+② app_system 用平台的 "superuser" 连接串（Neon 的 "Postgres role" 一般可以）
+   如果没有，就把 SYSTEM_DATABASE_URL 也指向同一个用户，
+   然后在需要绕过 RLS 的地方改用"临时设一个通用租户上下文"的方案
+```
+
+**Supabase 特别要注意：** **它默认给你的 `postgres` 角色其实是 `supabase_admin` 的成员，行为接近超级用户。** **用 `select rolname, rolsuper, rolbypassrls from pg_roles` 那条查一下，别猜。**
+
+**如果云端实在给不了两个角色：** **这一节的 RLS 部分你可以只"理解"，不"验证"。** **但你要知道，那样你的系统只有仓储层一层防护。** **把这一点写进 `docs/上线清单.md`。**
 
 ### `nullif(..., '')::uuid` —— 少了这个，没设上下文时直接报错
 
@@ -789,14 +1024,32 @@ invalid input syntax for type uuid: ""
 
 **也就是说：没设租户上下文 = 什么都查不到。这是对的。**
 
-## 5.3 验证 RLS 真的生效
+## 5.4 验证 RLS 真的生效
 
 **写一个临时脚本 `scripts/rls-test.js`：**
+
+**注意它 `require` 的是 `pool`（也就是 `app_user`），不是 `systemPool`。** **`systemPool` 有 `bypassrls`，用它测什么都"通过"，等于没测。**
 
 ```js
 const pool = require('../src/db/pool');
 
 (async () => {
+  // 先自证身份：如果这里是超级用户，后面全白测
+  const who = await pool.query(
+    `select current_user as me,
+            (select rolsuper from pg_roles where rolname = current_user) as is_super,
+            (select rolbypassrls from pg_roles where rolname = current_user) as bypass`
+  );
+
+  console.log('当前连接身份：', who.rows[0]);
+
+  if (who.rows[0].is_super || who.rows[0].bypass) {
+    console.error('\n❌ 这个连接是超级用户或带 BYPASSRLS，RLS 对它永远无效。');
+    console.error('   把 DATABASE_URL 改成 app_user 再跑。');
+    await pool.end();
+    process.exit(1);
+  }
+
   const t = await pool.query("select id, name from tenants order by created_at limit 2");
   console.log('租户：', t.rows.map((r) => r.name).join(' / '));
 
@@ -853,9 +1106,18 @@ const pool = require('../src/db/pool');
 node scripts/rls-test.js
 ```
 
-**关键看前两行：**
+**第一行必须先看这个：**
 
 ```text
+当前连接身份： { me: 'app_user', is_super: false, bypass: false }
+```
+
+**三个值都对，才有必要往下看。** **只要 `is_super` 或 `bypass` 是 `true`，脚本会直接报错退出——** **因为那种情况下后面的数字全部不可信。**
+
+**然后看这两行：**
+
+```text
+租户： 客户甲 / 客户乙
 不设上下文能读到几条消息： 0
 ```
 
@@ -869,7 +1131,262 @@ node scripts/rls-test.js
 
 **改回来，别忘了。**
 
-## 5.4 RLS 的代价
+**再做一个反向实验（比上一个更值）：**
+
+**把 `.env` 的 `DATABASE_URL` 临时改回 `postgres`，重跑这个脚本。**
+
+**你会看到脚本在自证身份那一步就红了：**
+
+```text
+❌ 这个连接是超级用户或带 BYPASSRLS，RLS 对它永远无效。
+   把 DATABASE_URL 改成 app_user 再跑。
+```
+
+**这个实验只用三十秒，但它能永久性地在你脑子里钉住一件事：** **RLS 生效的前提是"你的连接不是超级用户"，而不是"你写了 force"。**
+
+**改回来。**
+
+## 5.5 加了 RLS 之后，你的登录接口立刻就坏了
+
+**这是这一节最重要的十五分钟。不做这一步，第 24 周后面的所有接口全部返回 401。**
+
+**先想清楚一件事：`users` 表现在有 `force row level security` 了。**
+
+**而 `src/middleware/auth.js` 里那句是这么写的：**
+
+```js
+const { rows } = await pool.query(
+  'select id, email, role, tenant_id from users where id = $1',
+  [payload.uid]
+);
+```
+
+**它用的是 `pool`，没有 `withTenant`，也就没有 `app.tenant_id`。**
+
+**结果：**
+
+```text
+登录成功了（token 签出来了）
+↓
+下一个请求带 token → auth 中间件 → 查 users → 0 行
+↓
+返回 401 "账号不存在"
+```
+
+**客户的表现：** **登录页点"登录" → 跳转 → 立刻被踢回登录页 → 再登 → 再被踢。** **而他输的密码完全正确。**
+
+**这就是 `force row level security` 的第一个代价，而且它砸的是最核心的那条路径。**
+
+### 为什么不能用 withTenant 解决
+
+**因为这是个死循环，和上一节小程序登录遇到的一模一样：**
+
+```text
+要设 tenant_id → 得知道这个用户属于哪个租户
+要知道属于哪个租户 → 得先查 users
+要查 users → 得先有 tenant_id
+```
+
+**`auth` 中间件的唯一职责就是"从 token 里的 uid 反查出这个人的一切"——它必然运行在"还不知道租户"的状态下。**
+
+**同理还有三处：**
+
+```text
+auth.js        查 users           ← 最致命，所有接口都挂
+tenant.js      查 tenants         ← tenants 表没有 RLS，暂时没事
+登录路由        查 users（按 email） ← 直接查不到，登不进去
+注册路由        插 users           ← with check 拦，插不进去
+```
+
+**所以这不是"某一处要改"，是"凡是在知道租户之前就要读写的表，都不能走 RLS"。**
+
+### 建 `src/db/system-pool.js`
+
+**新建这个文件：**
+
+```js
+const { Pool } = require('pg');
+require('dotenv').config();
+
+// 系统连接：绕过 RLS。
+// 只给"还不知道租户是谁"的场景用：登录、注册、auth 反查、回调、定时任务。
+// 其他任何地方用 pool + withTenant。
+const systemPool = new Pool({
+  connectionString: process.env.SYSTEM_DATABASE_URL || process.env.DATABASE_URL,
+  max: 4,
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 5000,
+});
+
+systemPool.on('error', (err) => {
+  console.error('[system-db] 空闲连接出错：', err.message);
+});
+
+module.exports = systemPool;
+```
+
+**`.env` 加一行：**
+
+```text
+SYSTEM_DATABASE_URL=postgres://postgres:你的密码@localhost:5432/saas_lab
+```
+
+**本地开发时它和 `DATABASE_URL` 一样。** **生产环境必须不一样——见本节最后。**
+
+### 改三处，改完立刻验证
+
+**第一处：`src/middleware/auth.js`**
+
+```js
+const jwt = require('jsonwebtoken');
+const systemPool = require('../db/system-pool');   // ← 改这里
+
+module.exports = async function auth(req, res, next) {
+  const token = req.cookies.token;
+
+  if (!token) {
+    return res.status(401).json({ error: '未登录' });
+  }
+
+  let payload;
+  try {
+    payload = jwt.verify(token, process.env.JWT_SECRET);
+  } catch (err) {
+    return res.status(401).json({ error: '登录已过期，请重新登录' });
+  }
+
+  // 这一句必须用 systemPool：
+  // 此刻还不知道 tenant_id，用 pool 会被 RLS 拦成 0 行
+  const { rows } = await systemPool.query(
+    'select id, email, role, tenant_id from users where id = $1',
+    [payload.uid]
+  );
+
+  if (rows.length === 0) {
+    return res.status(401).json({ error: '账号不存在' });
+  }
+
+  req.user = rows[0];
+  next();
+};
+```
+
+**第二处：`src/routes/auth.js` 的登录**
+
+**`select ... from users where email = $1` 这句换成 `systemPool.query`。**
+
+**注意 `users` 的唯一约束是 `(tenant_id, email)`，不是 `email`。** **所以同一个邮箱在不同公司里可以各有一份——你的登录查询必须处理这个：**
+
+```js
+const { rows } = await systemPool.query(
+  `select id, email, password_hash, role, tenant_id
+   from users where email = $1
+   order by created_at
+   limit 2`,
+  [email]
+);
+
+if (rows.length === 0) {
+  return res.status(401).json({ error: '邮箱或密码不对' });
+}
+
+if (rows.length > 1) {
+  // 同一个邮箱属于多家公司：让客户选，或者约定"只允许第一个"
+  return res.status(409).json({
+    error: '这个邮箱在多家公司都有账号，请联系管理员处理',
+    code: 'MULTI_TENANT_EMAIL',
+  });
+}
+```
+
+**第三处：`src/routes/auth.js` 的注册**
+
+**注册要 `insert into users`，`with check` 会拦住它（因为 `app.tenant_id` 是空）。**
+
+**注册整个流程都在"还没有租户上下文"的状态下（先建 `tenants`，再建 `users`），所以整段都用 `systemPool`：**
+
+```js
+const client = await systemPool.connect();
+```
+
+**把这一个 `pool.connect()` 换成 `systemPool.connect()` 就够了，后面那些 `client.query` 全都不用改。**
+
+### 验证：三步，缺一不可
+
+**第一步：重启服务，用 curl 登录**
+
+```text
+curl -X POST http://localhost:3000/api/auth/login -H "Content-Type: application/json" -d "{\"email\":\"alpha@test.local\",\"password\":\"test12345\"}" -c cookies.txt
+```
+
+**期望：**
+
+```json
+{"user":{"id":"...","email":"alpha@test.local","role":"owner"},"tenant":{"id":"...","name":"客户甲"}}
+```
+
+**如果返回 `401 邮箱或密码不对`，说明登录那次 `systemPool` 没生效。**
+
+**第二步：用 cookie 打 `/api/me`**
+
+```text
+curl http://localhost:3000/api/me -b cookies.txt
+```
+
+**期望：** 正常的用户 + 租户信息。
+
+**如果返回 `401 账号不存在`，说明 `auth` 中间件那次 `systemPool` 没生效。**
+
+**第三步：确认业务接口仍然受 RLS 保护**
+
+```text
+curl http://localhost:3000/api/conversations -b cookies.txt
+```
+
+**期望：** 只返回自己公司的对话。
+
+**这一步是反向验证——** **如果你把 `withTenant` 也改成了 `systemPool`，这里会返回所有公司的对话。** **那就白做了。**
+
+### 三处改完后，这张表要背下来
+
+| 场景 | 用哪个 | 为什么 |
+|---|---|---|
+| `auth` 里按 uid 查 user | `systemPool` | 还不知道租户 |
+| 登录按 email 查 user | `systemPool` | 还不知道租户 |
+| 注册建 tenant + user | `systemPool` | 还没有租户 |
+| 业务接口的读写 | `pool` + `withTenant` | 知道租户，必须受 RLS 约束 |
+| 支付回调按 order_no 反查租户 | `systemPool` | 还不知道租户 |
+| 定时任务跨租户扫描 | `systemPool` | 有意跨租户 |
+| 后台管理查所有租户 | `systemPool` | 有意跨租户 |
+
+**判据只有一句话：** **"执行这条 SQL 的那一刻，我知道租户是谁吗？"** **不知道 → `systemPool`；知道 → `withTenant`。**
+
+### 上线前把 `app_system` 的权限收紧
+
+**5.3 节建的 `app_system` 我给了 `alter default privileges ... on tables`——** **也就是"以后所有新表都自动给它权限"。**
+
+**这在开发阶段是必要的（不然每加一张表你都要手动 `grant`，忘了就报 `permission denied`）。** **但它意味着：`app_system` 最终能读写你所有的表。**
+
+**这不是最小权限。上线前必须收紧：**
+
+```sql
+-- 先收掉宽授权
+revoke all on all tables in schema public from app_system;
+
+-- 只给四张表，只给需要的动作
+grant select on tenants to app_system;
+grant select, insert, update on users, wechat_users, invite_codes to app_system;
+grant select, insert, update on wechat_messages to app_system;
+grant select, insert, update on wechat_subscribe_grants to app_system;
+```
+
+**为什么后两张也要：** **第 194 节的订阅消息，`sendOrderStatus` 里的写操作走的是 `withTenantFromPool`（`app_user`）——** **但 `scripts/retry-messages.js` 那个重试脚本跨租户扫，用的是 `systemPool`。** **它需要读写 `wechat_messages`。**
+
+**所以是六张表，不是四张。** **我第一版只写了四张，跑重试脚本时会报 `permission denied for table wechat_messages`。**
+
+**这个权限清单不要求你现在做。** **但把它复制到 `docs/上线清单.md`，标上"必须"，并写清一件事：** **上线后如果你加了新表，而新表也需要被 `systemPool` 访问，你得回来加一行 `grant`。** **忘了就会在某个深夜收到 `permission denied`。**
+
+## 5.6 RLS 的代价
 
 **说清代价，你才知道什么时候该用它。**
 
@@ -879,13 +1396,16 @@ node scripts/rls-test.js
 ❌ 每条查询多一层判断，性能损失 5%—15%（这个规模感觉不到）
 ❌ 报错信息会很奇怪：明明有数据，查出来 0 行
 ❌ 事务里必须设上下文，忘了就是 0 行
+❌ 凡是"还没确定租户"的路径，都得单独开一条 systemPool，多维护一套连接
 ```
 
-**第三条最容易浪费你的时间。**
+**第四条最容易浪费你的时间。**
 
 **以后遇到"数据明明在库里，接口返回空"，第一个要查的是：这个请求有没有设 `app.tenant_id`。**
 
-**这条排查经验记在笔记里。**
+**第五条最容易留下安全隐患。** **`systemPool` 是一个"合法的越权入口"，它必须被严格限制用途。** **第 166 节会写一个脚本，把所有 `systemPool` 的使用位置列出来——你要能对每一处说出"为什么这里必须绕过 RLS"。**
+
+**这两条排查经验都记在笔记里。**
 
 ---
 
@@ -1007,24 +1527,48 @@ if (!row) {
 - [ ] `npm run check` 输出"✅ 路由层检查通过"
 - [ ] 我加过一行注释形式的 `req.query.tenant_id`，脚本能抓到
 - [ ] `package.json` 里有 `check` 这个 script
+- [ ] 脚本末尾会打印"绕过 RLS 的位置"清单
+- [ ] 那个清单现在是 **3 处**（`middleware/auth.js` 1 处 + `routes/auth.js` 2 处）
 
 ## D. RLS
 
 - [ ] 005 迁移跑过，四张表都有 `enable` 和 `force`
+- [ ] **建了 `app_user`（无 super / 无 bypassrls）和 `app_system`（有 bypassrls）**
+- [ ] `select rolname, rolsuper, rolbypassrls from pg_roles` 查过，`app_user` 是 `f / f`
+- [ ] `.env` 的 `DATABASE_URL` 已经是 `app_user`，不是 `postgres`
+- [ ] `npm run ping` 用 `app_user` 能通
+- [ ] `rls-test.js` 第一行输出 `is_super: false, bypass: false`
 - [ ] `rls-test.js` 里"不设上下文能读到几条消息"是 0
 - [ ] 我删过 `force`，看到它变成非 0，再改回来
+- [ ] **我把 `DATABASE_URL` 临时改回 `postgres`，看到脚本在第一行就红了**
 - [ ] 我知道 `nullif(current_setting(...), '')` 少了会报什么错
+- [ ] 我能说出为什么 `force` 对超级用户无效
 
-## E. 理解
+## E. 加了 RLS 之后登录还能用（**这一条最容易漏**）
+
+- [ ] `src/db/system-pool.js` 存在
+- [ ] `.env` 里有 `SYSTEM_DATABASE_URL`
+- [ ] `middleware/auth.js` 用的是 `systemPool`，不是 `pool`
+- [ ] `routes/auth.js` 的登录查询用 `systemPool`
+- [ ] `routes/auth.js` 的注册连接用 `systemPool.connect()`
+- [ ] `curl POST /api/auth/login` 能拿到 200 + cookie
+- [ ] `curl GET /api/me` 带 cookie 返回正常用户，不是"账号不存在"
+- [ ] `curl GET /api/conversations` 只返回自己公司的数据（**反向验证：这证明 `withTenant` 没有被你一起改坏**）
+- [ ] 我能说出那张"哪个场景用哪个连接"的表
+- [ ] 我把 `app_user` / `app_system` 那两段 SQL 复制进了 `docs/上线清单.md`
+
+## F. 理解
 
 - [ ] 我能说出为什么 `tenantId` 不通过参数传
 - [ ] 我能说出事务里为什么不能等慢接口
 - [ ] 我知道 `rowCount = 0` 是告警信号，不是正常返回
+- [ ] 我能说出为什么 `auth` 中间件**必须**用 `systemPool`（而不是"为了省事"）
 
-## F. 笔记
+## G. 笔记
 
 - [ ] `NOTES.md` 填完
 - [ ] 记下了"接口返回空但库里有数据"的排查第一步
+- [ ] 记下了"凡是在知道租户之前就要读写的表，不能走 RLS"
 
 ## 提交
 

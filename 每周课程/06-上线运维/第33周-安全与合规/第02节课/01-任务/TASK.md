@@ -67,6 +67,40 @@ if (!email.includes("@")) {
 
 ---
 
+# 开工卡：这一节在哪台机器、哪个目录做
+
+> **每节开始前先读这张卡。** 环境和你的实际情况不一致，就先解决环境，别往下看。
+
+| 问题 | 答案 |
+|---|---|
+| **在哪台机器** | **只有你的 Windows 电脑。** 这一节建练手项目，**不要动你已经上线的代码**。 |
+| **用哪个终端** | **Git Bash。**（要跑 `mkdir`、`curl`、`npm`） |
+| **现在在哪个目录** | <code>mkdir -p "B:/OPC-Distance_study/每周课程/06-上线运维/第33周-安全与合规/第02节课/03-练习代码/valid-lab"</code><br><code>cd "B:/OPC-Distance_study/每周课程/06-上线运维/第33周-安全与合规/第02节课/03-练习代码/valid-lab"</code> |
+| **本节新建什么** | `valid-lab/server.js`（故意只做前端校验的接口）<br>`valid-lab/public/index.html`（带前端校验的表单）<br>`validate.js`（你写的服务端校验函数）<br>`requests.md`（8 条 curl 和响应） |
+
+## 开工前先跑这一条
+
+确认你没站错地方：
+
+```bash
+node -v && curl --version | head -1
+```
+
+**应该看到：**
+
+```text
+v22.22.2
+curl 8.x.x (x86_64-w64-mingw32)
+```
+
+**`curl` 在 Git Bash 里自带**，不用另装。这一点很重要：这一周所有攻击测试都靠它。
+
+## 如果不对
+
+**`curl: command not found`** → 你在 PowerShell 里，`curl` 在那不一定是真的 curl（可能是 `Invoke-WebRequest` 的别名）。换 Git Bash。
+
+---
+
 # 第 1 步：先亲手证明前端校验拦不住（20 分钟）
 
 ## 1.1 这一步干什么
@@ -75,9 +109,23 @@ if (!email.includes("@")) {
 
 ## 1.2 准备一个"有前端校验"的接口
 
+**先确认你在 `valid-lab/` 里**（开工卡已经带你进来了）。不要重复 cd，也不要在里面再建一层：
+
 ```bash
-mkdir -p 03-练习代码/valid-lab
-cd 03-练习代码/valid-lab
+pwd
+```
+
+**应该看到路径最后是 `valid-lab`：**
+
+```text
+B:/OPC-Distance_study/每周课程/06-上线运维/第33周-安全与合规/第02节课/03-练习代码/valid-lab
+```
+
+**如果不是**，先回到开工卡，重跑那两行命令。
+
+确认位置对了，再初始化项目：
+
+```bash
 npm init -y
 npm install express
 ```

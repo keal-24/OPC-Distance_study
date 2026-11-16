@@ -61,6 +61,40 @@ docker run -p 3000:3000 chat-app
 
 ---
 
+# 开工卡：这一节在哪台机器、哪个目录做
+
+> **每节开始前先读这张卡。** 环境和你的实际情况不一致，就先解决环境，别往下看。
+
+| 问题 | 答案 |
+|---|---|
+| **在哪台机器** | **你的 Windows 电脑 + 浏览器（GitHub Packages 页面）。** |
+| **用哪个终端** | **Git Bash** + 浏览器。 |
+| **现在在哪个目录** | <code>cd "B:/OPC-Distance_study/每周课程/06-上线运维/第30周-持续集成与部署/第01节课/03-练习代码/ci-lab"</code> |
+| **本节新建什么** | `Dockerfile`<br>`.dockerignore`<br>`.github/workflows/build.yml` |
+
+## 开工前先跑这一条
+
+确认你没站错地方：
+
+```bash
+docker version 2>/dev/null | head -5 || echo "Docker 没启动"
+```
+
+**应该看到：**
+
+```text
+Client: Docker Engine - Community
+ Version: 27.x.x
+```
+
+**这一节本地也要能 build**，Docker Desktop 必须启动。
+
+## 如果不对
+
+**`Docker 没启动`** → 打开 Docker Desktop，等鲸鱼变绿再跑。
+
+---
+
 # 第 1 步：先写一个像样的 Dockerfile（20 分钟）
 
 ## 1.1 为什么不用最简单的写法
@@ -68,7 +102,7 @@ docker run -p 3000:3000 chat-app
 **最简单的 Dockerfile 是这样：**
 
 ```dockerfile
-FROM node:20
+FROM node:22
 WORKDIR /app
 COPY . .
 RUN npm install
@@ -197,7 +231,7 @@ README.md
 **新建 `ci-lab/Dockerfile`：**
 
 ```dockerfile
-FROM node:20-alpine AS deps
+FROM node:22-alpine AS deps
 
 WORKDIR /app
 
@@ -205,7 +239,7 @@ COPY package.json package-lock.json ./
 
 RUN npm ci
 
-FROM node:20-alpine AS runtime
+FROM node:22-alpine AS runtime
 
 WORKDIR /app
 
@@ -232,11 +266,11 @@ CMD ["node", "server.js"]
 
 | 段 | 意思 |
 |---|---|
-| `FROM node:20-alpine AS deps` | 第一阶段，起名 `deps`。`alpine` 是精简版 Linux，约 50MB |
+| `FROM node:22-alpine AS deps` | 第一阶段，起名 `deps`。`alpine` 是精简版 Linux，约 50MB |
 | `WORKDIR /app` | 之后所有命令都在 `/app` 下执行 |
 | `COPY package.json package-lock.json ./` | **只拷这两个**，不拷源码 |
 | `RUN npm ci` | 装依赖，这一层会被缓存 |
-| `FROM node:20-alpine AS runtime` | 第二阶段，**重新开始**，最终的镜像用这一阶段 |
+| `FROM node:22-alpine AS runtime` | 第二阶段，**重新开始**，最终的镜像用这一阶段 |
 | `ENV NODE_ENV=production` | 告诉 npm/express "这是生产环境" |
 | `COPY --from=deps /app/node_modules ./node_modules` | 从第一阶段把 `node_modules` 拿过来 |
 | `COPY src ./src` | 只拷源码 |
@@ -358,8 +392,8 @@ docker build -t ci-lab:local .
 [+] Building 42.1s (14/14) FINISHED
  => [internal] load build definition from Dockerfile                0.0s
  => [internal] load .dockerignore                                   0.0s
- => [internal] load metadata for docker.io/library/node:20-alpine   2.1s
- => [deps 1/4] FROM docker.io/library/node:20-alpine@sha256:...     0.0s
+ => [internal] load metadata for docker.io/library/node:22-alpine   2.1s
+ => [deps 1/4] FROM docker.io/library/node:22-alpine@sha256:...     0.0s
  => [deps 2/4] WORKDIR /app                                         0.1s
  => [deps 3/4] COPY package.json package-lock.json ./               0.1s
  => [deps 4/4] RUN npm ci                                          28.4s
@@ -395,7 +429,7 @@ docker build -t ci-lab:local .
 
 ```text
 [+] Building 1.8s (14/14) FINISHED
- => CACHED [deps 1/4] FROM docker.io/library/node:20-alpine@sha256:...
+ => CACHED [deps 1/4] FROM docker.io/library/node:22-alpine@sha256:...
  => CACHED [deps 2/4] WORKDIR /app
  => CACHED [deps 3/4] COPY package.json package-lock.json ./
  => CACHED [deps 4/4] RUN npm ci
@@ -780,9 +814,9 @@ Run docker/build-push-action@v6
 ...
 #1 [internal] load build definition from Dockerfile
 #1 transferring dockerfile: 1.24kB done
-#2 [internal] load metadata for docker.io/library/node:20-alpine
+#2 [internal] load metadata for docker.io/library/node:22-alpine
 #3 [auth] library/node:pull token for registry-1.docker.io
-#4 [deps 1/4] FROM docker.io/library/node:20-alpine@sha256:...
+#4 [deps 1/4] FROM docker.io/library/node:22-alpine@sha256:...
 #5 [deps 2/4] WORKDIR /app
 #6 [deps 3/4] COPY package.json package-lock.json ./
 #7 [deps 4/4] RUN npm ci
@@ -803,7 +837,7 @@ Run docker/build-push-action@v6
 | 行 | 意思 |
 |---|---|
 | `#1 load build definition` | 读 Dockerfile |
-| `#2 ... metadata` | 查 `node:20-alpine` 的摘要 |
+| `#2 ... metadata` | 查 `node:22-alpine` 的摘要 |
 | `#3 [auth] ... token` | 向 Docker Hub 要一个匿名 token（拉基础镜像） |
 | `#7 RUN npm ci` | 装依赖 |
 | `#13 pushing layers` | 推层（只推缺的层） |
@@ -814,7 +848,7 @@ Run docker/build-push-action@v6
 **"只推缺的层"是什么意思：**
 
 ```text
-基础镜像 node:20-alpine 的层，GHCR 上已经有了 → 跳过
+基础镜像 node:22-alpine 的层，GHCR 上已经有了 → 跳过
 你的 node_modules 层可能是新的 → 推
 你的源码层每次都是新的 → 推
 ```
@@ -970,7 +1004,7 @@ curl http://127.0.0.1:3000/health
 ## 4.1 三个地方会慢
 
 ```text
-① 拉基础镜像 node:20-alpine（从 Docker Hub）
+① 拉基础镜像 node:22-alpine（从 Docker Hub）
 ② 推镜像到 ghcr.io
 ③ 拉 npm 包
 ```
@@ -980,13 +1014,13 @@ curl http://127.0.0.1:3000/health
 **如果 CI 卡在 `#2 [internal] load metadata`：**
 
 ```text
-#2 [internal] load metadata for docker.io/library/node:20-alpine
+#2 [internal] load metadata for docker.io/library/node:22-alpine
 ```
 
 **一直不动，最后：**
 
 ```text
-ERROR: failed to solve: node:20-alpine: failed to resolve source metadata for docker.io/library/node:20-alpine: failed to do request: Head "https://registry-1.docker.io/v2/library/node/manifests/20-alpine": dial tcp 44.208.254.194:443: i/o timeout
+ERROR: failed to solve: node:22-alpine: failed to resolve source metadata for docker.io/library/node:22-alpine: failed to do request: Head "https://registry-1.docker.io/v2/library/node/manifests/20-alpine": dial tcp 44.208.254.194:443: i/o timeout
 ```
 
 **逐段读：**
@@ -1033,13 +1067,13 @@ ERROR: failed to solve: failed to push ghcr.io/yourname/ci-lab:latest: unexpecte
 **这不是"镜像加速器"，是"换一个发布方"。**
 
 ```dockerfile
-FROM node:20-alpine
+FROM node:22-alpine
 ```
 
 **改成：**
 
 ```dockerfile
-FROM docker.m.daocloud.io/library/node:20-alpine
+FROM docker.m.daocloud.io/library/node:22-alpine
 ```
 
 **⚠️ 这是第三方镜像站，不是你信任的原始发布方。** 用之前要确认：
@@ -1052,8 +1086,8 @@ FROM docker.m.daocloud.io/library/node:20-alpine
 **对比 digest 的命令：**
 
 ```bash
-docker buildx imagetools inspect docker.m.daocloud.io/library/node:20-alpine
-docker buildx imagetools inspect node:20-alpine
+docker buildx imagetools inspect docker.m.daocloud.io/library/node:22-alpine
+docker buildx imagetools inspect node:22-alpine
 ```
 
 **两个 `Digest:` 一样，说明内容相同。** 不一样就不要用。
@@ -1234,7 +1268,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
           cache: 'npm'
 
       - run: npm ci
@@ -2056,7 +2090,7 @@ docker run --rm ghcr.io/owner/ci-lab:latest cat /app/.env
 **要求：**
 
 1. 记录当前大小；
-2. 试三个办法（挑两个做）：`npm ci --omit=dev`、去掉 `HEALTHCHECK`、用 `node:20-alpine` 换成更小的基础镜像；
+2. 试三个办法（挑两个做）：`npm ci --omit=dev`、去掉 `HEALTHCHECK`、用 `node:22-alpine` 换成更小的基础镜像；
 3. 每次记大小。
 
 **记录：** 表格：改动 / 大小 / 有没有副作用。

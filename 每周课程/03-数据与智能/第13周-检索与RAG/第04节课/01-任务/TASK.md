@@ -2,7 +2,7 @@
 
 > 这节课结束时，你手上有：`rag-app\tools\vector-lab.js`（手算余弦相似度的三个例子）、`rag-app\tools\cosine.js`（20 行，零依赖，被后面所有脚本引用）、`rag-app\out\vector-lab.md`（你的手算过程 + 结论）。
 
-**时间**：约 100 分钟
+**建议用时**：100 分钟
 **前置**：第 87 节课的 `search-keyword.js` 和基线 4/8
 
 ---

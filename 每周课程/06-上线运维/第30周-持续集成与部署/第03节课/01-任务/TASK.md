@@ -66,6 +66,40 @@ npm start
 
 ---
 
+# 开工卡：这一节在哪台机器、哪个目录做
+
+> **每节开始前先读这张卡。** 环境和你的实际情况不一致，就先解决环境，别往下看。
+
+| 问题 | 答案 |
+|---|---|
+| **在哪台机器** | **你的 Windows 电脑 + 浏览器。** |
+| **用哪个终端** | **Git Bash** + 浏览器。 |
+| **现在在哪个目录** | <code>cd "B:/OPC-Distance_study/每周课程/06-上线运维/第30周-持续集成与部署/第01节课/03-练习代码/ci-lab"</code> |
+| **本节新建什么** | `src/price.js`<br>`test/price.test.js`<br>`.github/workflows/test.yml` |
+
+## 开工前先跑这一条
+
+确认你没站错地方：
+
+```bash
+node --version && npm --version
+```
+
+**应该看到：**
+
+```text
+v22.22.2
+10.8.2
+```
+
+**Node 必须是 20 或更高。** 这一节的 `node:test` 是 Node 18 之后才稳定。
+
+## 如果不对
+
+**`v12` 或 `v16`** → Node 太老，装 Node 22（回第 1 周环境课）。
+
+---
+
 # 第 1 步：先让代码可测（20 分钟）
 
 ## 1.1 为什么先要改代码
@@ -213,7 +247,7 @@ app.listen(3000)
 
 ## 2.1 建目录和文件
 
-**Node 20 自带测试运行器，不用装任何东西。**
+**Node 22 自带测试运行器，不用装任何东西。**
 
 ```bash
 mkdir -p test
@@ -315,7 +349,7 @@ node --test
 
 **你没告诉它测哪个文件，它自己找的。**
 
-**默认规则（以 Node 20 为准，版本不同可能微调）：**
+**默认规则（以 Node 22 为准，版本不同可能微调）：**
 
 ```text
 ① 文件名匹配 **/*.test.js / *.test.mjs / *.test.cjs
@@ -697,7 +731,7 @@ npm test
 | 职责清楚 | check 管"代码写法"，test 管"功能对不对" |
 | 失败好定位 | 列表上直接看到是哪个 workflow 红 |
 | 可以分别卡 | 有些项目允许 lint 警告，但不允许测试失败 |
-| 以后能加矩阵 | 测 Node 18/20/22 三个版本 |
+| 以后能加矩阵 | 测 Node 20/22/24 三个版本 |
 
 **代价是每次 push 要多开一台机器。** 对你这个规模，值得。
 
@@ -725,10 +759,10 @@ jobs:
       - name: 下载仓库代码
         uses: actions/checkout@v4
 
-      - name: 安装 Node 20
+      - name: 安装 Node 22
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
           cache: 'npm'
 
       - name: 安装依赖
@@ -919,7 +953,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        node: ['18', '20', '22']
+        node: ['20', '22', '24']
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -941,7 +975,7 @@ jobs:
 **`fail-fast: false` 为什么重要：**
 
 ```text
-默认 true：Node 18 失败 → 立刻取消 20 和 22
+默认 true：Node 20 失败 → 立刻取消 22 和 24
 你只知道"18 挂了"，不知道"20 和 22 好不好"
 ```
 
@@ -953,7 +987,7 @@ jobs:
 ③ 你想知道"升级 Node 会不会挂"
 ```
 
-**你现在不需要。** 但知道有这么个东西，以后看到 `Node 18 / 20 / 22` 三行绿的截图不会懵。
+**你现在不需要。** 但知道有这么个东西，以后看到 `Node 20 / 22 / 24` 三行绿的截图不会懵。
 
 **⚠️ 矩阵会成倍消耗额度。** 三个版本 = 三次完整安装 + 三次测试。
 
@@ -1215,7 +1249,7 @@ git push
 ```text
 Run actions/setup-node@v4
   with:
-    node-version: 20
+    node-version: 22
     cache: npm
     cache-dependency-path: **/package-lock.json
 Error: Dependencies lock file is not found in /home/runner/work/ci-lab/ci-lab. Supported file patterns: package-lock.json,npm-shrinkwrap.json,yarn.lock
@@ -1398,7 +1432,7 @@ test('写数据库', () => {          // ← 忘了 async
 ```text
 测试函数同步返回 → 运行器认为"这个用例结束了，通过"
 而那个 Promise 还在后台跑
-跑失败了也没人看（未处理的 Promise 拒绝，在 Node 20 里会打印警告，但不一定让测试失败）
+跑失败了也没人看（未处理的 Promise 拒绝，在 Node 22 里会打印警告，但不一定让测试失败）
 ```
 
 **这个错误叫"假绿"，是测试里最贵的一种 bug：**
@@ -2017,4 +2051,4 @@ Node 的 `实际 !== 期望` 里，哪边是实际：
 | `Merging is blocked` 但检查都绿 | 有别的 required check 没过 | 点 `Details` 看全部 |
 | 搜不到 job 名 | 还没跑过 | 先跑一次再选 |
 | `exit code 1` 但日志里没有 fail | 可能是 setup 阶段失败 | 往上滚，看 `Run npm ci` 那一步 |
-| 测试耗时突然翻倍 | 依赖变多了 / 缓存没命中 | 看 `Post 安装 Node 20` 有没有存缓存 |
+| 测试耗时突然翻倍 | 依赖变多了 / 缓存没命中 | 看 `Post 安装 Node 22` 有没有存缓存 |

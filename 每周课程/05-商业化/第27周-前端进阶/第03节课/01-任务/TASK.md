@@ -4,7 +4,8 @@
 > 这节课只解决一件事：**任何一块界面，在任何一个时刻，都必须能回答"现在是什么状态"。**
 > 听上去像废话。但客户打电话说的最多的一句话就是"**它不动了**"——**因为他看不出是在加载、还是出错、还是本来就没数据。**
 
-**建议用时**：140 分钟
+**建议用时**：145 分钟（6 个步骤，含动手敲代码的时间）
+**时间怎么排**：一次做不完是正常的。建议分两次：第 0—2 步（80 分钟）一次，第 3—5 步（65 分钟）一次。每个步骤标题后面的括号就是该步的分钟数。
 **你需要先完成**：第 184 节（`orders.html` 用组件重写，四个分支都有）
 
 ---
@@ -350,7 +351,29 @@ if (err.status === 403) → KIND.FORBIDDEN（"联系管理员"，不给重试按
 
 ## 1.3 自检点
 
-**在 `orders.js` 里用它重写：**
+**在 `public/js/pages/orders.js` 里用它重写。**
+
+**先在这个文件顶部（`(function () {` 之后）加一行 `renderOrderRow`。** **它是"把一个订单对象变成一行 HTML"的函数，第 184 节写列表时你是直接内联在 `List()` 里的，现在要提出来复用：**
+
+```js
+function renderOrderRow(o) {
+  return ListItem({
+    id: o.id,
+    title: o.order_no,
+    meta: o.customer_name + ' · ' + date(o.order_date),
+    right: money(o.amount_cents),
+    rightSub: Badge({
+      kind: STATUS_KIND[o.status] || 'default',
+      label: STATUS_TEXT[o.status] || o.status,
+    }),
+    href: '/order-detail.html?id=' + encodeURIComponent(o.id),
+  });
+}
+```
+
+**`ListItem / Badge / money / date / STATUS_KIND / STATUS_TEXT` 都要能在这个文件里访问到。** **如果第 184 节你是把它们挂到 `window.UI` 上的，这里就要写成 `UI.ListItem(...)`、`UI.money(...)`。** **先看一遍你第 184 节的写法，别直接抄。**
+
+**然后把 `orders.js` 里原来那段"取数据 + 拼 HTML + 塞进 innerHTML"的代码，整个换成：**
 
 ```js
 const view = AsyncView.create({
@@ -370,6 +393,10 @@ const view = AsyncView.create({
 
 view.run(() => API.get('/api/orders'));
 ```
+
+**换完之后，原来那个 `renderMain()` 就没人调了——把它和 `state.loading / state.error / state.orders` 一起删掉。** **不删的话不会报错，但你会留着两份"渲染逻辑"，下次改样式时改一份、忘一份。**
+
+**这就是第 184 节"手写渲染"和第 185 节"四态封装"的关系：** **184 是让你看清 `renderMain` 里那四个 `return` 长什么样，185 是把那四个 `return` 收进一个可复用的函数里。**
 
 **然后在控制台里试五种情况：**
 
@@ -653,9 +680,20 @@ const view = AsyncView.create({
       actionHref: '/imports.html',
     };
   },
-  renderData: ...,
+
+  // 这一段是上面 357—370 行写过的那段，原样照搬，不要重写
+  renderData: (orders) => {
+    return List({
+      items: orders.map(renderOrderRow),
+      empty: false,
+    });
+  },
 });
 ```
+
+**`renderData` 写 `...` 是不行的。** **`AsyncView.create` 里没有默认的 `renderData`（第 101 行没给它默认值），漏了就在 `paint()` 里报 `renderData is not a function`。**
+
+**这个错误的表现很容易误导人：** **不是启动时报错，是"数据加载完了、该显示了"的那一刻才报——** **所以你看到的是"页面一直转圈"，而不是"代码有错"。**
 
 **这样"空"的文案会自动跟着当前筛选/搜索变。**
 
@@ -702,66 +740,105 @@ const view = AsyncView.create({
 
 ## 4.2 加一个顶部进度条
 
-**在 `state.js` 里加 `keepWhileLoading` 选项：**
+**改 `public/js/state.js`。要做三处修改。**
+
+**第一处：解构里加 `keepWhileLoading`（在 98—105 行那个 `const { ... } = options;` 里加一行）：**
 
 ```js
-function createAsyncView(options) {
-  const { container, renderData, keepWhileLoading = false, ... } = options;
-  ...
-  function setState(next) {
-    state = { ...state, ...next };
+    const {
+      container,
+      renderData,
+      renderSkeleton = () => SkeletonList(5),
+      emptyWhen = (data) => !data || (Array.isArray(data) && data.length === 0),
+      emptyOptions = {},
+      loadingDelayMs = 200,
+      keepWhileLoading = false,          // ← 新加这一行
+    } = options;
+```
 
-    if (state.kind === KIND.LOADING) {
-      if (keepWhileLoading && state.data !== null) {
-        container.classList.add('is-refreshing');
-        showTopBar();
+**第二处：把 `setState` 整个换掉（原来是 145—159 行那 15 行）：**
+
+```js
+    function setState(next) {
+      state = { ...state, ...next };
+
+      if (state.kind === KIND.LOADING) {
         clearTimeout(loadingTimer);
+
+        // 已经有数据在屏幕上 → 不擦掉，只在顶部走一根线
+        if (keepWhileLoading && state.data !== null) {
+          container.classList.add('is-refreshing');
+          showTopBar();
+          loadingTimer = setTimeout(() => {
+            if (state.kind === KIND.LOADING) showTopBar();
+          }, loadingDelayMs);
+          return;
+        }
+
+        // 首次加载 → 清空，200ms 后出骨架屏
+        container.innerHTML = '';
         loadingTimer = setTimeout(() => {
-          if (state.kind === KIND.LOADING) showTopBar();
+          if (state.kind === KIND.LOADING) paint();
         }, loadingDelayMs);
         return;
       }
 
-      container.innerHTML = '';
-      ...
+      // 从 LOADING 之外的状态进来，说明数据回来了
+      container.classList.remove('is-refreshing');
+      finishTopBar();
+
+      clearTimeout(loadingTimer);
+      paint();
     }
-    ...
+```
+
+**注意 `finishTopBar()` 放在 `paint()` 之前。** **放后面的话，`paint()` 换掉整块 HTML 时进度条会闪一下再消失。**
+
+**第三处：文件末尾（`window.AsyncView = ...` 那一行之前）加两个函数：**
+
+```js
+  function showTopBar() {
+    let bar = document.getElementById('top-progress');
+
+    if (!bar) {
+      bar = document.createElement('div');
+      bar.id = 'top-progress';
+      document.body.appendChild(bar);
+    }
+
+    bar.style.transition = 'none';
+    bar.style.width = '0%';
+    bar.style.opacity = '1';
+
+    requestAnimationFrame(() => {
+      bar.style.transition = 'width 0.4s ease, opacity 0.2s ease';
+      bar.style.width = '80%';
+    });
   }
-}
+
+  function finishTopBar() {
+    const bar = document.getElementById('top-progress');
+    if (!bar || bar.style.opacity === '0') return;
+
+    bar.style.width = '100%';
+
+    setTimeout(() => {
+      bar.style.opacity = '0';
+      setTimeout(() => {
+        bar.style.transition = 'none';
+        bar.style.width = '0%';
+      }, 200);
+    }, 200);
+  }
 ```
 
 **`showTopBar` 是一个 3px 的横条，从 0 走到 80%，** **数据回来时走到 100% 然后消失。**
 
-```js
-function showTopBar() {
-  let bar = document.getElementById('top-progress');
+**`showTopBar` 里第一句 `bar.style.transition = 'none'` 不能省。** **省了的话，第二次刷新时进度条从 `100%` 慢慢退回 `0%`——客户会看见一根线倒着走，很像 bug。**
 
-  if (!bar) {
-    bar = document.createElement('div');
-    bar.id = 'top-progress';
-    document.body.appendChild(bar);
-  }
+**先关掉过渡把宽度归零，下一帧再打开过渡往 80% 走，才是"从零开始"。**
 
-  bar.style.width = '0%';
-  bar.style.opacity = '1';
-
-  requestAnimationFrame(() => {
-    bar.style.width = '80%';
-  });
-}
-
-function finishTopBar() {
-  const bar = document.getElementById('top-progress');
-  if (!bar) return;
-
-  bar.style.width = '100%';
-
-  setTimeout(() => {
-    bar.style.opacity = '0';
-    setTimeout(() => { bar.style.width = '0%'; }, 200);
-  }, 200);
-}
-```
+**最后加 CSS。放到 `public/css/app.css` 末尾：**
 
 ```css
 #top-progress {
@@ -774,8 +851,25 @@ function finishTopBar() {
   transition: width 0.4s ease, opacity 0.2s ease;
   z-index: 200;
   opacity: 0;
+  pointer-events: none;
+}
+
+/* 刷新时旧内容淡一点，表示"这不是最终结果" */
+.is-refreshing {
+  opacity: 0.55;
+  transition: opacity 0.15s ease;
+  pointer-events: none;
 }
 ```
+
+**`pointer-events: none` 两处都要加：**
+
+```text
+① 进度条在最顶上，不设的话它会挡住下面 3px 里的点击
+② 刷新时列表是灰的，客户不该能在"旧数据"上点进详情
+```
+
+**第 ② 条是业务判断：** **旧数据正在被替换，这时候点进去看到的是过期状态。挡住比让他点错好。**
 
 ## 4.3 为什么是"走到 80% 然后等"
 
@@ -857,35 +951,82 @@ function finishTopBar() {
 
 **必须加主动超时：**
 
-**改 `api.js`：**
+**改 `public/js/api.js`——把整个 `request` 函数替换成下面这版，其余（`window.API` 那几行）不用动：**
 
 ```js
-async function request(path, options = {}) {
-  const { timeoutMs = 15000, ...rest } = options;
+  async function request(path, options = {}) {
+    const { timeoutMs = 15000, ...rest } = options;
 
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), timeoutMs);
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
 
-  try {
-    const res = await fetch(path, {
-      credentials: 'include',
-      signal: controller.signal,
-      ...rest,
-    });
-    ...
-  } catch (err) {
-    if (err.name === 'AbortError') {
-      const timeoutErr = new Error('请求超时，网络可能不太好');
-      timeoutErr.status = 0;
-      timeoutErr.isTimeout = true;
-      throw timeoutErr;
+    let res;
+
+    try {
+      res = await fetch(path, {
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(rest.headers || {}),
+        },
+        ...rest,
+        signal: controller.signal,
+      });
+    } catch (err) {
+      if (err.name === 'AbortError') {
+        const timeoutErr = new Error('请求超时，网络可能不太好');
+        timeoutErr.status = 0;
+        timeoutErr.isTimeout = true;
+        throw timeoutErr;
+      }
+
+      // 断网时 fetch 抛 TypeError: Failed to fetch
+      const netErr = new Error('连不上服务器，检查一下网络');
+      netErr.status = 0;
+      netErr.isNetwork = true;
+      throw netErr;
+    } finally {
+      clearTimeout(timer);
     }
-    throw err;
-  } finally {
-    clearTimeout(timer);
+
+    if (res.status === 204) return null;
+
+    const contentType = res.headers.get('content-type') || '';
+    const isJson = contentType.includes('application/json');
+    const body = isJson ? await res.json().catch(() => null) : await res.text();
+
+    if (!res.ok) {
+      const message =
+        (body && body.error) ||
+        (res.status === 401 ? '登录已过期，请重新登录' : `请求失败（${res.status}）`);
+
+      const err = new Error(message);
+      err.status = res.status;
+      err.body = body;
+
+      if (res.status === 401) {
+        window.location.href = '/login.html';
+      }
+
+      throw err;
+    }
+
+    return body;
   }
-}
 ```
+
+**四处改动，每一处都有原因：**
+
+```text
+① timeoutMs 解构出来     → 每个接口能单独设超时（导出报表要 60 秒）
+② signal 放到 ...rest 之后 → 否则调用方传的 signal 会把超时用的那个覆盖掉
+③ fetch 单独一个 try     → 只兜网络错误，不兜后面解析 JSON 的错误
+④ 断网也包成 Error       → 上层拿到的永远是 { message, status }，不用判断 err.name
+```
+
+**第 ② 条是这段代码里最容易写错的一行。**
+
+**对象展开是"后面的覆盖前面的"。** **`...rest` 写在 `signal` 后面，调用方没传 `signal` 时它是 `undefined`，会把你的 `controller.signal` 整个覆盖成 `undefined`——超时就静默失效了。** **这类 bug 不会报错，只会"偶尔不超时"。**
 
 ## 5.4 三个数字记下来
 

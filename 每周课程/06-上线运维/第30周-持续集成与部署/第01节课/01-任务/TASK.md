@@ -71,6 +71,37 @@ docker compose up -d
 
 ---
 
+# 开工卡：这一节在哪台机器、哪个目录做
+
+> **每节开始前先读这张卡。** 环境和你的实际情况不一致，就先解决环境，别往下看。
+
+| 问题 | 答案 |
+|---|---|
+| **在哪台机器** | **你的 Windows 电脑 + 浏览器里的 GitHub。** 这一周不碰服务器。 |
+| **用哪个终端** | **Git Bash**（跑 git 命令）**+ 浏览器**（看 Actions 页面），两个窗口并排最好。 |
+| **现在在哪个目录** | <code>mkdir -p "B:/OPC-Distance_study/每周课程/06-上线运维/第30周-持续集成与部署/第01节课/03-练习代码/ci-lab"</code><br><code>cd "B:/OPC-Distance_study/每周课程/06-上线运维/第30周-持续集成与部署/第01节课/03-练习代码/ci-lab"</code><br>**`ci-lab` 是这一周唯一的工作目录，后面六节都在它里面。** |
+| **本节新建什么** | `ci-lab/`（一个独立的 Git 仓库，第 1 步会 `git init`）<br>`ci-lab/.github/workflows/hello.yml` |
+
+## 开工前先跑这一条
+
+确认你没站错地方：
+
+```bash
+git --version
+```
+
+**应该看到：**
+
+```text
+git version 2.4x.x.windows.1
+```
+
+## 如果不对
+
+**报 `command not found`** → Git 没装，回第 1 周环境课装 Git for Windows。
+
+---
+
 # 第 1 步：建一个专门练 CI 的仓库（15 分钟）
 
 ## 1.1 为什么不能直接在 `chat-app` 里练
@@ -965,21 +996,21 @@ Run node -v
   npm -v
   git --version
   shell: /usr/bin/bash -e {0}
-v20.19.4
+v22.22.2
 10.8.2
 git version 2.51.0
 ```
 
 **（具体小版本号每天在变，你的可能不一样，看大版本就行。）**
 
-**所以 runner 自带 Node 20。**
+**所以 runner 自带 Node 22。**
 
 **那为什么还要 `setup-node`？三个理由：**
 
 | 理由 | 说明 |
 |---|---|
-| 版本不可控 | `ubuntu-latest` 哪天从 Node 20 换成 22，你的项目可能就崩了 |
-| 不能指定 | 你想测 Node 18 和老版本兼容，自带的做不到 |
+| 版本不可控 | `ubuntu-latest` 哪天从 Node 22 换成 24，你的项目可能就崩了 |
+| 不能指定 | 你想测 Node 20 和老版本兼容，自带的做不到 |
 | 没有缓存 | 自带的 npm 不会帮你缓存 `node_modules` |
 
 **第三个理由最实际。**
@@ -1003,7 +1034,7 @@ jobs:
       - name: 第二步：装指定版本的 Node
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
           cache: 'npm'
 
       - name: 第三步：确认版本
@@ -1019,7 +1050,7 @@ jobs:
 
 | 行 | 意思 |
 |---|---|
-| `node-version: '20'` | 装 Node 20 的最新小版本 |
+| `node-version: '22'` | 装 Node 22 的最新小版本 |
 | `cache: 'npm'` | 把 npm 的下载缓存存起来，下次直接用 |
 
 **`'20'` 为什么加引号：**
@@ -1120,7 +1151,7 @@ Cache restored successfully
 
 | 行 | 意思 |
 |---|---|
-| `Found in cache @ ...` | Node 20 已经在机器上了，不用下载 |
+| `Found in cache @ ...` | Node 22 已经在机器上了，不用下载 |
 | `Cache hit` | 缓存命中了 |
 | `Cache restored successfully` | 缓存恢复完成 |
 
@@ -1392,7 +1423,7 @@ on:
    npm ci 默认走 registry.npmjs.org
 
 ③ 拉 Docker 镜像
-   docker build 的 FROM node:20 要走 Docker Hub
+   docker build 的 FROM node:22 要走 Docker Hub
 ```
 
 **第 ① 个你控制不了太多。第 ② ③ 个能换源。**

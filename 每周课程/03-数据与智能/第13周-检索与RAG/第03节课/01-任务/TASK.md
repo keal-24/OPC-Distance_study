@@ -2,7 +2,7 @@
 
 > 这节课结束时，你手上有：`rag-app\search-keyword.js`（能按相关度排序、能高亮、能只返回需要的字段）、`rag-app\tools\bench-queries.js`（8 个问题的命中对照表）、`rag-app\out\keyword-baseline.md`（你的关键词检索基线数据）。
 
-**时间**：约 110 分钟
+**建议用时**：110 分钟
 **前置**：第 86 节课的 `data\rag.db`，`chunks` 表 10 行、`chunks_fts` 表 10 行，中文能按单字搜到
 
 ---
@@ -124,7 +124,7 @@ const hits = db.prepare("SELECT rowid FROM chunks_fts WHERE seg MATCH ?").all(q)
 **1.** 进项目目录：
 
 ```text
-cd /d "B:\OPC-Distance_study\每周课程\03-数据与智能\第13周-检索与RAG\第03节课\03-练习代码"
+cd "B:\OPC-Distance_study\每周课程\03-数据与智能\第13周-检索与RAG\第03节课\03-练习代码"
 xcopy /E /I /Y "..\第02节课\03-练习代码\rag-app" rag-app
 cd rag-app
 ```

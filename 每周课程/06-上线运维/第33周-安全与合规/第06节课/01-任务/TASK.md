@@ -73,6 +73,45 @@ access_log /var/log/nginx/access.log;
 
 ---
 
+# 开工卡：这一节在哪台机器、哪个目录做
+
+> **每节开始前先读这张卡。** 环境和你的实际情况不一致，就先解决环境，别往下看。
+
+| 问题 | 答案 |
+|---|---|
+| **在哪台机器** | **两个地方：**<br><code>① 你的 Windows：写脱敏函数、导出删除接口、依赖审计、版权清单</code><br><code>② 服务器：查 Nginx 日志有没有敏感信息、改日志格式、查 .env 权限</code> |
+| **用哪个终端** | **Git Bash 本地 + Git Bash（SSH 到服务器）。** |
+| **现在在哪个目录** | **本地：**<br><code>mkdir -p "B:/OPC-Distance_study/每周课程/06-上线运维/第33周-安全与合规/第06节课/03-练习代码/privacy-lab"</code><br><code>cd "B:/OPC-Distance_study/每周课程/06-上线运维/第33周-安全与合规/第06节课/03-练习代码/privacy-lab"</code><br>**服务器（第 2.5 步之后）：**<br><code>ssh root@你的服务器IP</code> |
+| **本节新建什么** | `privacy-lab/redact.js`、`logger.js`、`server.js`<br>`数据地图.md`（八个去处）<br>`版权清单.md`（字体/图片/依赖三张表）<br>`deps-audit.md` |
+
+## 开工前先跑这一条
+
+确认你没站错地方：
+
+```bash
+node -v; echo "---"; echo "（服务器上再跑：sudo grep -c '1[3-9][0-9]\{9\}' /var/log/nginx/access.log）"
+```
+
+**应该看到：**
+
+**本地：**
+
+```text
+v22.22.2
+---
+（服务器上再跑：sudo grep -c '1[3-9][0-9]\{9\}' /var/log/nginx/access.log）
+```
+
+**服务器上那条应该是 `0`。** 如果不是 0，说明访问日志里已经有手机号了，第 2.5 步要处理。
+
+## 如果不对
+
+**服务器那条返回一个很大的数字** → 真事故，日志里有手机号。先改 Nginx 的 `log_format`，旧日志单独删掉或脱敏。
+
+**本地 `npm ls` 报 `missing`** → 依赖没装，`npm ci`。
+
+---
+
 # 第 1 步：先画一张数据地图（25 分钟）
 
 ## 1.1 为什么第一步是画图

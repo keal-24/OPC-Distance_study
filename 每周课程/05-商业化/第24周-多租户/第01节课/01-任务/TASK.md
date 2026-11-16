@@ -4,7 +4,8 @@
 > 前 23 周你做的东西都默认"只有一个人用"。这节课先把选择摆清楚：**一套系统服务多个客户，路只有三条，你只能走其中一条。**
 > 这节课不写业务代码，只做三件事：看清现状、算清成本、把项目骨架立起来。**后面的六节课全部长在这个骨架上。**
 
-**建议用时**：100 分钟
+**建议用时**：110 分钟（7 个步骤，含动手敲代码的时间）
+**时间怎么排**：一次做不完是正常的。建议分两次：第 0—2 步（50 分钟）一次，第 3—6 步（60 分钟）一次。每个步骤标题后面的括号就是该步的分钟数。
 **你需要先完成**：第 1—161 节课（有一个能跑的 `chat-app`，第 3 周的）
 **这一周新建**：一个叫 `saas-lab` 的项目，一整周都在里面改
 
@@ -394,15 +395,162 @@ PORT=3000
 ③ 不要给这行加引号，加了引号，引号也会被当成密码的一部分
 ```
 
-**如果你第 5 周的 PostgreSQL 已经不在了**（换了电脑、删了服务），两条路：
+**⚠️ 现在你会用 `postgres` 填这一行，因为只有它有权限建表。** **但第 165 节会让你改成 `app_user`——不改的话 RLS 一点都不会生效。**
+
+**提前说清楚这件事，是因为它很容易被漏掉：** **你在这里写下 `postgres`，跑通了七节课的一切，然后第 165 节做 RLS 验证时发现"策略明明写了却不起作用"，会很困惑。**
+
+**现在只需要记住一句话：** **`postgres` 是超级用户，超级用户永远绕过 RLS。** **到了第 165 节，把这一行换掉。**
+
+**如果你第 5 周用的是 SQLite（Node 自带的 `node:sqlite`），这一周要换到 PostgreSQL。**
+
+**README 里写了三个理由，最硬的那一个是：** **第 165 节的 RLS（行级安全）SQLite 没有。** **少了它，你这周的"双层防护"只有一层。**
+
+**换起来不难，只改四处：**
 
 ```text
-本地装：重新装一次 PostgreSQL，建一个叫 saas_lab 的库
-云端免费：Neon、Supabase、Railway 都提供免费 PostgreSQL，
-         注册后在控制台复制 Connection String，粘贴到 .env
+驱动        node:sqlite  →  npm install pg
+占位符      ?            →  $1、$2
+类型        TEXT/INTEGER →  uuid / jsonb / timestamptz
+主键默认值  手工生成     →  gen_random_uuid()
 ```
 
-**云端方案要注意：免费实例会休眠。** 十几分钟没人访问后，第一次查询要等几秒。这是正常现象，不是你的代码有问题。
+**装 PostgreSQL 的两条路。**
+
+**先看这一节要花多久：本地装 25 分钟，云端注册 10 分钟。别跳，这一步卡住后面七节全部做不了。**
+
+### 路线一：本地装（推荐，Windows）
+
+**为什么推荐本地：** **不受网络影响，不花钱，第 29 周做 Docker 时也能复用这份知识。**
+
+**第 1 步：下载安装包**
+
+打开 https://www.postgresql.org/download/windows/ → 点「Download the installer」→ 选 **16.x 或 17.x 的 Windows x86-64**。
+
+**不要下 EDB 之外的第三方打包版。** 那些版本经常缺 `pg_dump`，第 32 周做备份时会出问题。
+
+**第 2 步：跑安装程序，五个地方要注意**
+
+```text
+① Installation Directory   默认 C:\Program Files\PostgreSQL\17\  直接下一步
+② Select Components        全选（PostgreSQL Server / pgAdmin 4 / Stack Builder / Command Line Tools）
+                           Stack Builder 用不上，但装它不占地方
+③ Data Directory           默认就行
+④ Password                 给 postgres 超级用户设一个密码
+                           ⚠ 这个密码要记下来，忘了只能重装
+                           建议设成你能背的，比如 Dev123456（本机实验用）
+⑤ Port                     默认 5432，不要改
+```
+
+**密码这一项最容易出事：** **很多人随手打一个，装完就忘了。这周用不到它，第 30 周部署服务器时会用到。** **现在就记进密码管理器。**
+
+**第 3 步：验证装好了**
+
+**打开一个新的 PowerShell 窗口**（不要用装之前就开着的那个，环境变量还没生效），敲：
+
+```text
+psql --version
+```
+
+**期望输出：**
+
+```text
+psql (PostgreSQL) 17.2
+```
+
+**如果报 `psql : 无法将"psql"项识别为 cmdlet...`：**
+
+```text
+① 99% 是没重开终端 —— 关掉所有终端窗口，重新开一个
+② 还不行就手动加 PATH：C:\Program Files\PostgreSQL\17\bin
+③ 加到 PATH 之后还是不行，看装的是哪个版本 —— 路径里的 17 要和实际目录名一致
+```
+
+**第 4 步：建数据库**
+
+**用 `psql` 命令行建（比 pgAdmin 快，而且你能复制粘贴）：**
+
+```text
+psql -U postgres -c "CREATE DATABASE saas_lab;"
+```
+
+**它会让你输密码 —— 输第 2 步设的那个。**
+
+**输密码时屏幕上什么都不显示。** **不是卡住了，是 Linux 那边传下来的习惯（不回显）。直接敲完回车。**
+
+**期望输出：**
+
+```text
+CREATE DATABASE
+```
+
+**第 5 步：确认建好了**
+
+```text
+psql -U postgres -l
+```
+
+**在一长串列表里找 `saas_lab`，找到就对了。**
+
+**按 `q` 退出这个列表。** **很多人在这里卡住，以为程序死了——它是在等你翻页，按 `q` 就出来。**
+
+**第 6 步：拼出连接串**
+
+```text
+postgres://postgres:你的密码@localhost:5432/saas_lab
+```
+
+**三个地方容易拼错：**
+
+```text
+① 密码里有 @ / : / % / #  → 要做 URL 编码，或者干脆把密码改成纯字母数字
+② 用户名不是 postgres     → 装的时候如果改了超级用户名，这里要跟着改
+③ 端口不是 5432           → 装的时候改过端口的话这里也要改
+```
+
+**第 ① 条踩过一次就够：** 密码 `Abc@2024` 拼进连接串会变成 `postgres://postgres:Abc@2024@localhost...`，**驱动会把 `2024@localhost` 当成主机名**，报错是 `getaddrinfo ENOTFOUND 2024@localhost`——**看起来像 DNS 问题，其实是密码里的 `@`。**
+
+**最简单的解法：这个库的密码只用字母和数字。**
+
+### 路线二：云端免费（不想装本地）
+
+**Neon（neon.tech）：**
+
+```text
+1. 用 GitHub 账号登录
+2. 建 Project → 区域选 Singapore（离得近，延迟低）
+3. 控制台首页有 "Connection string"，点复制
+4. 它长得像：postgresql://user:pass@ep-xxx.ap-southeast-1.aws.neon.tech/neondb?sslmode=require
+5. 末尾的 ?sslmode=require 不要删 —— 删了连不上
+```
+
+**Supabase（supabase.com）：** 建 Project → Settings → Database → Connection string → 选 **URI** 那一栏（不是 "Session pooler"）。
+
+**Railway（railway.app）：** 建 Project → 加 PostgreSQL → Variables 里复制 `DATABASE_URL`。
+
+**云端方案有三个坑，必须提前知道：**
+
+```text
+① 免费实例会休眠
+   十几分钟没人访问后连接会断，第一次查询要等 3—10 秒
+   这不是你的代码慢 —— 第 4 步的 ping 脚本会撞上，别慌
+
+② 连接数上限很低
+   免费套餐一般给 5—20 条并发连接
+   pool.js 里的 max: 10 要改小成 5，否则跑测试时会 "too many clients"
+
+③ 一定要带 sslmode=require
+   云端不接受明文连接，报错是 "no pg_hba.conf entry"
+```
+
+**第 ① 条会持续困扰你整个阶段。** **每次改完代码跑第一个请求都慢，那不是 bug。** **判断方法：连跑两次，第二次变快，就是休眠唤醒。**
+
+### 装完之后必须做的一件事
+
+**不管走哪条路，现在就把连接串写进 `.env`，然后立刻跑第 4 步的 `ping.js` 验证。**
+
+**不要"先写代码，等会儿一起测"。** **连接不通的情况下写代码，你分不清报错是"代码错了"还是"根本连不上"。**
+
+**这一步过了再往下。**
 
 ## 3.5 建目录骨架
 

@@ -2,7 +2,7 @@
 
 > 这节课结束时，你手上有：`第05节课/03-练习代码/collector/clean.js`（七个清洗函数）、`collector/data/raw.json`（原始脏数据，一份不动）、`collector/data/clean.json`（洗干净的 7 条）、`collector/data/diff.md`（清洗前后对照表）。
 
-**时间**：约 110 分钟
+**建议用时**：110 分钟
 **前置**：第 74 节课抓全的 `items-paged.json`（30 条），会用 `JSON.stringify` 写文件
 
 ---
@@ -102,7 +102,7 @@ null   = 没有值                        → "我没查到 / 对方没给"
 **1.** 复制上一节的项目：
 
 ```text
-cd /d "B:\OPC-Distance_study\每周课程\03-数据与智能\第11周-数据采集\第05节课\03-练习代码"
+cd "B:\OPC-Distance_study\每周课程\03-数据与智能\第11周-数据采集\第05节课\03-练习代码"
 xcopy /E /I /Y "..\第04节课\03-练习代码\collector" collector
 cd collector
 del fetch-pages.js state.json items-paged.json

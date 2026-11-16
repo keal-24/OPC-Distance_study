@@ -2,7 +2,7 @@
 
 > 这节课结束时，你手上有：`src\pipeline.js`（一条命令跑完整个目录）、`src\report.js`（生成入库报告）、`out\import-report.md`（这批处理的完整结果），以及 `data\app.db` 里三个文件全部 `success`、`chunks` 表有真实数据。
 
-**时间**：约 110 分钟
+**建议用时**：110 分钟
 **前置**：第 83 节课的 `parseOne()`、`parse-cli.js --retry`，以及 `documents / sections / chunks` 三张表
 
 ---
@@ -184,7 +184,7 @@ function looksScanned(format, pages) {
 **1.** 复制上一节的项目：
 
 ```text
-cd /d "B:\OPC-Distance_study\每周课程\03-数据与智能\第12周-文档解析\第07节课\03-练习代码"
+cd "B:\OPC-Distance_study\每周课程\03-数据与智能\第12周-文档解析\第07节课\03-练习代码"
 xcopy /E /I /Y "..\第06节课\03-练习代码\doc-parser" doc-parser
 cd doc-parser
 ```

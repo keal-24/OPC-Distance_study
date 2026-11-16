@@ -105,7 +105,7 @@
 
 ## 十二、完成检查
 
-- [ ] `node -v` 是 v20.x，`which node` 是 `/usr/bin/node`
+- [ ] `node -v` 是 v22.x，`which node` 是 `/usr/bin/node`
 - [ ] `nginx -v` 有输出，`systemctl status nginx` 是 active
 - [ ] `free -h` 里 Swap 是 2.0Gi
 - [ ] `/etc/fstab` 里有 swap 那行，`mount -a` 没报错

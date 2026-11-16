@@ -48,13 +48,53 @@
 **今天的验收只有四行命令的输出：**
 
 ```text
-node -v      → v20.x.x
+node -v      → v22.x.x
 npm -v       → 10.x.x
 nginx -v     → nginx version: nginx/1.18.0 (Ubuntu)
 free -h      → Swap: 2.0Gi
 ```
 
 **四行全对，这节课就过了。**
+
+---
+
+# 开工卡：这一节在哪台机器、哪个目录做
+
+> **每节开始前先读这张卡。** 环境和你的实际情况不一致，就先解决环境，别往下看。
+
+| 问题 | 答案 |
+|---|---|
+| **在哪台机器** | **服务器。** 这一节所有命令都在服务器上跑。 |
+| **用哪个终端** | **Git Bash 发起 SSH → 登录后就是服务器上的 bash。**<br>怎么判断自己在服务器上：提示符是 `root@ubuntu-server:~#`，不是 `Admin@DESKTOP MINGW64`。 |
+| **现在在哪个目录** | <code>ssh root@你的服务器IP</code><br><code>sudo mkdir -p /srv/app && cd /srv/app</code> |
+| **本节新建什么** | `环境清单.md`（放回本地 `第03节课/03-练习代码/`）<br>服务器上：Node 22、git、nginx、2G swap |
+
+## 开工前先跑这一条
+
+确认你没站错地方：
+
+```bash
+uname -v && echo "---" && free -h | head -2 && echo "---" && df -h / | tail -1
+```
+
+**应该看到：**
+
+```text
+#1 SMP ... Ubuntu 5.15.0-119.129-generic
+---
+               total        used        free
+Mem:           1.9Gi       180Mi       1.3Gi
+---
+/dev/vda1        40G  5.2G   33G  14% /
+```
+
+**`Mem` 的 `total` 如果是 1.9Gi**，说明是 2G 机器，**接下来必须加 swap**（这一节第 6 步）。
+
+## 如果不对
+
+**`free` 只有 900Mi** → 你买的可能是 1G 机器，swap 更要加，至少 2G。
+
+**提示符是 `MINGW64`** → 你还在本地，没 ssh 上去。
 
 ---
 
@@ -423,7 +463,7 @@ v12.22.9
 
 | 输出 | 意思 | 问题 |
 |---|---|---|
-| `v12.22.9` | Node 12，**2022 年就已经停止维护** | ❌ 你要 20.x |
+| `v12.22.9` | Node 12，**2022 年就已经停止维护** | ❌ 你要 22.x |
 | `8.5.1` | npm 8，老版本 | ❌ 有些包要求 npm 9+ |
 
 **Node 12 是什么年代的东西：**
@@ -505,24 +545,24 @@ The following packages will be REMOVED:
 
 ---
 
-# 第 5 步：用 NodeSource 装 Node 20（20 分钟）
+# 第 5 步：用 NodeSource 装 Node 22（20 分钟）
 
 ## 5.1 三条路，你只需要知道两条
 
-**想在 Ubuntu 上装 Node 20，有三条路：**
+**想在 Ubuntu 上装 Node 22，有三条路：**
 
 | 方式 | 命令 | 结果 | 适合谁 |
 |---|---|---|---|
 | Ubuntu 官方源 | `apt install nodejs` | **v12** | ❌ 不要 |
-| NodeSource 源 | 加一个第三方 apt 源 | **v20** | ✅ **推荐** |
-| nvm | 一个版本管理脚本 | v20，但装在用户目录 | 开发机，不适合服务器跑服务 |
+| NodeSource 源 | 加一个第三方 apt 源 | **v22** | ✅ **推荐** |
+| nvm | 一个版本管理脚本 | v22，但装在用户目录 | 开发机，不适合服务器跑服务 |
 
 **这一节用 NodeSource。**
 
 ## 5.2 加源
 
 ```bash
-curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
 ```
 
 **拆开读：**
@@ -533,7 +573,7 @@ curl                          下载工具
 -s                            安静模式，不显示进度条
 -S                            但如果出错了，还是要显示错误
 -L                            跟随重定向（这个地址会跳转）
-https://deb.nodesource.com/setup_20.x   一个脚本，自动帮你配源
+https://deb.nodesource.com/setup_22.x   一个脚本，自动帮你配源
 |                             把下载的内容交给下一个命令
 bash -                        用 bash 执行（- 表示从标准输入读）
 ```
@@ -550,7 +590,7 @@ bash -                        用 bash 执行（- 表示从标准输入读）
 **应该看到类似：**
 
 ```text
-## Installing the NodeSource Node.js 20.x repo...
+## Installing the NodeSource Node.js 22.x repo...
 
 ## Populating apt-get cache...
 
@@ -559,17 +599,17 @@ Hit:1 http://mirrors.tencentyun.com/ubuntu jammy InRelease
 ...
 ## Confirming "jammy" is supported...
 
-+ curl -sLf -o /dev/null 'https://deb.nodesource.com/node_20.x/dists/jammy/Release'
++ curl -sLf -o /dev/null 'https://deb.nodesource.com/node_22.x/dists/jammy/Release'
 
 ## Adding the NodeSource signing key to your keyring...
 
 + curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg
 
-## Creating apt sources list file for the NodeSource Node.js 20.x repo...
+## Creating apt sources list file for the NodeSource Node.js 22.x repo...
 
-+ echo 'deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_20.x nodistro main' > /etc/apt/sources.list.d/nodesource.list
++ echo 'deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_22.x nodistro main' > /etc/apt/sources.list.d/nodesource.list
 
-## Run `sudo apt-get install -y nodejs` to install Node.js 20.x and npm
+## Run `sudo apt-get install -y nodejs` to install Node.js 22.x and npm
 ## You may also need development tools to build native addons:
      sudo apt-get install -y g++ make
 ```
@@ -578,7 +618,7 @@ Hit:1 http://mirrors.tencentyun.com/ubuntu jammy InRelease
 
 | 行 | 意思 |
 |---|---|
-| `Installing the NodeSource Node.js 20.x repo` | 正在装 20.x 的源 |
+| `Installing the NodeSource Node.js 22.x repo` | 正在装 22.x 的源 |
 | `Confirming "jammy" is supported` | **确认 22.04（jammy）被支持** |
 | `Adding the NodeSource signing key` | 加签名密钥（防止有人伪造这个源） |
 | `Creating apt sources list file` | 把源地址写进一个文件 |
@@ -608,7 +648,7 @@ cat /etc/apt/sources.list.d/nodesource.list
 **应该看到：**
 
 ```text
-deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_20.x nodistro main
+deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_22.x nodistro main
 ```
 
 **再看 apt 能不能读到它：**
@@ -620,7 +660,7 @@ apt update
 **这次会多出一行：**
 
 ```text
-Get:6 https://deb.nodesource.com/node_20.x nodistro InRelease [4,893 B]
+Get:6 https://deb.nodesource.com/node_22.x nodistro InRelease [4,893 B]
 ```
 
 **看到 `deb.nodesource.com`，说明源生效了。**
@@ -641,7 +681,7 @@ The following NEW packages will be installed:
 0 upgraded, 1 newly installed, 0 to remove and 0 not upgraded.
 Need to get 28.7 MB of archives.
 After this operation, 189 MB of additional disk space will be used.
-Get:1 https://deb.nodesource.com/node_20.x nodistro/main amd64 nodejs amd64 20.11.1-1nodesource1 [28.7 MB]
+Get:1 https://deb.nodesource.com/node_22.x nodistro/main amd64 nodejs amd64 20.11.1-1nodesource1 [28.7 MB]
 ...
 Setting up nodejs (20.11.1-1nodesource1) ...
 ```
@@ -665,7 +705,7 @@ npm -v
 **应该看到：**
 
 ```text
-v20.11.1
+v22.22.2
 10.2.4
 ```
 
@@ -700,7 +740,7 @@ which node
 
 | 问题 | 说明 |
 |---|---|
-| 装在用户目录 | `/root/.nvm/versions/node/v20.x/bin/node` |
+| 装在用户目录 | `/root/.nvm/versions/node/v22.x/bin/node` |
 | pm2 找不到它 | pm2 通过 systemd 启动时，PATH 里没有 nvm |
 | 开机自启失败 | 服务器重启后，systemd 不知道 nvm 在哪 |
 | 换用户就没了 | `su ubuntu` 之后 nvm 不生效 |
@@ -708,7 +748,7 @@ which node
 **真实症状：**
 
 ```text
-你 ssh 进去，node -v 是 v20。
+你 ssh 进去，node -v 是 v22。
 你 pm2 start server.js，起来了。
 服务器重启后，pm2 说 online，但日志里：
   /usr/bin/env: 'node': No such file or directory
@@ -1342,7 +1382,7 @@ Filesystem      Size  Used Avail Use% Mounted on
 /dev/vda1        40G  6.1G   32G  17% /
 ===== 版本 =====
 git version 2.34.1
-v20.11.1
+v22.22.2
 10.2.4
 nginx version: nginx/1.18.0 (Ubuntu)
 ===== npm 源 =====
@@ -1438,7 +1478,7 @@ SyntaxError: Unexpected token '??'
 
 ```bash
 apt remove -y nodejs && apt autoremove -y
-curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
 apt install -y nodejs
 node -v
 ```
@@ -1576,7 +1616,7 @@ node -v
 ```
 
 ```text
-v20.11.1
+v22.22.2
 ```
 
 **看起来没问题。但：**
@@ -1740,7 +1780,7 @@ ls -l /usr/bin/node
 
 ## 十二、完成检查
 
-- [ ] `node -v` 是 v20.x，`which node` 是 `/usr/bin/node`
+- [ ] `node -v` 是 v22.x，`which node` 是 `/usr/bin/node`
 - [ ] `nginx -v` 有输出，`systemctl status nginx` 是 active
 - [ ] `free -h` 里 Swap 是 2.0Gi
 - [ ] `/etc/fstab` 里有 swap 那行，`mount -a` 没报错
@@ -1828,7 +1868,7 @@ ls -l /usr/bin/node
 
 ## B. 实操
 
-- [ ] `node -v` 是 v20.x
+- [ ] `node -v` 是 v22.x
 - [ ] `which node` 是 `/usr/bin/node`
 - [ ] `npm -v` 是 10.x
 - [ ] `git --version` 有输出
@@ -1869,7 +1909,7 @@ ls -l /usr/bin/node
 | `E: Unable to locate package nginx` | 没 `apt update` | 先 `apt update` |
 | `E: Could not get lock /var/lib/dpkg/lock-frontend` | 另一个 apt 在跑 | 等它结束；别 `rm` 那个锁文件 |
 | `node -v` 是 v12 | 用了 Ubuntu 的源 | 卸掉，用 NodeSource |
-| `EBADENGINE` | Node 版本低于包要求 | 升到 20.x |
+| `EBADENGINE` | Node 版本低于包要求 | 升到 22.x |
 | `SyntaxError: Unexpected token '??'` | Node 太老，不认识新语法 | 同上 |
 | `npm ci` 只输出 `Killed` | 内存不够，OOM killer | 加 swap；看 `dmesg` |
 | `swapon: insecure permissions 0644` | 没 `chmod 600` | 改权限后 `swapoff` + `swapon` |

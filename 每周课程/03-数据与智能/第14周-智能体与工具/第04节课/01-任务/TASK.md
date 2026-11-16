@@ -2,7 +2,7 @@
 
 > 这节课结束时，你手上有：`第04节课/03-练习代码/agent/dispatch.js` 和 `single-step.js`，能接住模型返回的 `tool_calls`，校验参数、执行、把结果用 `role: "tool"` 回传，拿到最终答案。
 
-**时间**：约 110 分钟
+**建议用时**：110 分钟
 **前置**：第 94 节课做出来的 `llm.js`、`mock-llm.js`、`probe.js`（能打印出 `tool_calls`）
 
 ---
@@ -94,7 +94,7 @@
 ## 1.2 操作
 
 ```text
-cd /d B:\OPC-Distance_study\每周课程\03-数据与智能\第14周-智能体与工具
+cd "B:\OPC-Distance_study\每周课程\03-数据与智能\第14周-智能体与工具"
 xcopy 第03节课\03-练习代码\agent 第04节课\03-练习代码\agent /E /I
 cd 第04节课\03-练习代码\agent
 node probe.js

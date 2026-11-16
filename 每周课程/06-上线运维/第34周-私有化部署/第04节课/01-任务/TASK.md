@@ -68,6 +68,53 @@ const res = await fetch("https://api.example-llm.com/v1/chat/completions", {
 
 ---
 
+# 开工卡：这一节在哪台机器、哪个目录做
+
+> **每节开始前先读这张卡。** 环境和你的实际情况不一致，就先解决环境，别往下看。
+
+| 问题 | 答案 |
+|---|---|
+| **在哪台机器** | **只有你的 Windows 电脑。** 用 Ollama 在本机跑模型，模拟「数据不出网」。 |
+| **用哪个终端** | **Git Bash**（跑 Ollama 和改代码）**+ 浏览器**（下载 Ollama）。 |
+| **现在在哪个目录** | <code>cd "B:/OPC-Distance_study/每周课程/06-上线运维/第34周-私有化部署/第04节课/03-练习代码"</code> |
+| **本节新建什么** | `llm-client.js`（只改 `baseURL` 的版本）<br>`ollama-compose.yml`<br>`模型测试记录.md`（响应时间、并发、质量对比） |
+
+## 开工前先跑这一条
+
+确认你没站错地方：
+
+```bash
+ollama --version 2>/dev/null || echo "没装 Ollama（正常，第 1 步会装）"; echo "---"; df -h /c | tail -1
+```
+
+**应该看到：**
+
+**两种结果都对：**
+
+```text
+ollama version is 0.5.x
+---
+/dev/sda2       476G  320G  156G  68% /
+```
+
+或
+
+```text
+没装 Ollama（正常，第 1 步会装）
+---
+/dev/sda2       476G  320G  156G  68% /
+```
+
+**⚠️ 装之前先看磁盘那一行：** Ollama 本体几百 MB，一个 7B 模型 4—5GB。**剩下空间不够 10G 就先清盘。**
+
+## 如果不对
+
+**`没装 Ollama`** → 去 ollama.com 下载 Windows 版，装完**重开一个 Git Bash**（要重启终端才认 PATH）。
+
+**磁盘剩余不到 10G** → 先清盘，不然模型下到一半会失败。
+
+---
+
 # 第 1 步：先认清差距，再动手（20 分钟）
 
 ## 1.1 本地模型和云端模型，差在哪

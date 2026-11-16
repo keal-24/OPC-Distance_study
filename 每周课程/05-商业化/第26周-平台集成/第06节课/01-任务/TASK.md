@@ -4,7 +4,8 @@
 > 前面五节都在"接"平台推来的东西。这节课反过来：**你主动去拉平台的数据——通讯录、审批、文档。**
 > 拉和推的容错策略完全不同：推要"快 + 幂等"，拉要"稳 + 能断点续传 + 不重复"。
 
-**建议用时**：150 分钟
+**建议用时**：180 分钟（7 个步骤，含动手敲代码的时间）
+**时间怎么排**：一次做不完是正常的。建议分两次：第 0—3 步（105 分钟）一次，第 4—6 步（75 分钟）一次。每个步骤标题后面的括号就是该步的分钟数。
 **你需要先完成**：第 180 节（卡片能发能点，审批能改状态）
 
 ---
@@ -672,8 +673,14 @@ node scripts/contacts-fetch.js
 [contacts] 被限流，第 1 次退避 2000ms（第 1 页）
 [contacts] 被限流，第 2 次退避 4000ms（第 1 页）
 [contacts] 第 1 页：50 条，累计 50，has_more=true
-...
+[contacts] 第 2 页：50 条，累计 100，has_more=true
+[contacts] 第 3 页：23 条，累计 123，has_more=false
+[contacts] 拉取完成：123 条
 ```
+
+**三页，共 123 条。** **数字对得上就说明分页正确。**
+
+**如果不确定你的平台有多少人，先去管理后台看成员总数——两边应该一样。** **差一个都要查，因为"少一个人"意味着同步完你会少一条映射，那个人从此看不见任何审批。**
 
 **总耗时会多出 6 秒，但最终成功。**
 
@@ -873,8 +880,6 @@ coalesce(string_to_array(nullif(t.depts_str, ''), ','), '{}'::text[])
 **少了第 ③ 步，没有部门的用户会变成 `null`，而列定义是 `not null default '{}'`——会报错。**
 
 **完整写法：**
-
-```sql
 
 ```sql
 insert into platform_contacts
@@ -1181,22 +1186,100 @@ app.post('/mock/delete-user', (req, res) => {
 
 ## 5.1 造一个"中途失败"
 
-**在 `applySync` 的 update 循环里，如果 `toUpdate.length > 50`，抛错。**
+**改 `applySync`，加一个可选的 `failAfter`。改两处：函数签名，和 update 循环的第一行。**
 
-**或者更简单：手动在中间打断。**
+**只改这两处，函数其余部分（insert 和 deactivate 两段）完全不动。**
 
-**用 `--dry-run` 的思路，这一节改成：先在 `applySync` 里加一个可选的 `failAfter` 参数。**
+**第一处，签名（760 行）：**
 
 ```js
 async function applySync(tenantId, platform, plan, options = {}) {
-  const failAfter = options.failAfter || Infinity;
-  ...
-  for (const item of plan.toUpdate) {
-    if (updated >= failAfter) {
-      throw new Error('模拟中途失败');
-    }
-    ...
+```
+
+**第二处，`for (const item of plan.toUpdate) {` 这个循环的第一行（806 行下面）：**
+
+```js
+    const failAfter = options.failAfter ?? Infinity;
+
+    for (const item of plan.toUpdate) {
+      if (updated >= failAfter) {
+        throw new Error('模拟中途失败');
+      }
+
+      await db.client.query(
+```
+
+**注意 `??` 不是 `||`。**
+
+**写 `options.failAfter || Infinity` 的话，传 `failAfter: 0`（"第一次更新就失败"）会被当成假值，直接变成 `Infinity`——** **你想测"立刻失败"，结果一次都不失败，然后开始怀疑事务没回滚。**
+
+**`??` 只对 `null` / `undefined` 兜底，`0` 是合法值。**
+
+**然后写个脚本，只在第 5 步的验证里用。**
+
+**新建 `scripts/sync-fail-test.js`（这个文件不用提交，验证完可以删）：**
+
+```js
+require('dotenv').config();
+const { planSync, applySync } = require('../src/integrations/contacts-sync');
+const pool = require('../src/db/pool');
+
+(async () => {
+  const tenantId = process.argv[2];
+  const platform = process.argv[3] || 'feishu';
+
+  if (!tenantId) {
+    console.error('用法：node scripts/sync-fail-test.js <tenantId> [platform]');
+    process.exit(1);
   }
+
+  const before = await pool.query(
+    'select count(*)::int as n from platform_contacts where tenant_id = $1',
+    [tenantId]
+  );
+
+  console.log('[test] 同步前的条数', before.rows[0].n);
+
+  const plan = await planSync(tenantId, platform);
+  console.log('[test] 计划：更新', plan.toUpdate.length, '条');
+
+  try {
+    await applySync(tenantId, platform, plan, { failAfter: 1 });
+    console.log('[test] 居然成功了？说明 failAfter 没生效');
+  } catch (err) {
+    console.log('[test] 如预期失败：', err.message);
+  }
+
+  const after = await pool.query(
+    'select count(*)::int as n from platform_contacts where tenant_id = $1',
+    [tenantId]
+  );
+
+  console.log('[test] 同步后的条数', after.rows[0].n);
+  console.log(
+    before.rows[0].n === after.rows[0].n
+      ? '[test] ✓ 回滚成功，一条都没写'
+      : '[test] ✗ 有数据被写进去了，事务没有包住'
+  );
+
+  await pool.end();
+})();
+```
+
+**跑：**
+
+```text
+node scripts/sync-fail-test.js <你的租户id>
+```
+
+**期望：**
+
+```text
+[test] 同步前的条数 123
+[test] 计划：更新 7 条
+[test] 如预期失败： 模拟中途失败
+[test] 同步后的条数 123
+[test] ✓ 回滚成功，一条都没写
 ```
 
 **然后测试：如果 update 到一半失败，会怎样？**
