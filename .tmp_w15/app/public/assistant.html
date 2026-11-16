@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <title>图文助手</title>
+  <style>
+    body { font-family: "Microsoft YaHei", sans-serif; max-width: 860px; margin: 28px auto; padding: 0 16px; color: #222; }
+    h1 { font-size: 20px; }
+    .box { border: 1px solid #ddd; border-radius: 8px; padding: 14px; margin-bottom: 14px; }
+    img#preview { max-width: 100%; max-height: 280px; display: none; border-radius: 6px; }
+    input[type="text"] { width: 100%; padding: 9px; font-size: 14px; box-sizing: border-box; }
+    button { padding: 9px 18px; font-size: 14px; cursor: pointer; margin-top: 8px; }
+    .bubble { padding: 10px 12px; border-radius: 8px; margin-bottom: 10px; white-space: pre-wrap; line-height: 1.6; }
+    .user { background: #eef4ff; }
+    .bot { background: #f6f8fa; }
+    .hint { color: #666; font-size: 13px; }
+    .warn { color: #b00; font-size: 13px; }
+    audio { width: 100%; margin-top: 8px; }
+    table { border-collapse: collapse; width: 100%; font-size: 13px; }
+    td, th { border: 1px solid #e3e3e3; padding: 6px 8px; text-align: left; }
+  </style>
+</head>
+<body>
+  <h1>图文助手</h1>
+  <p class="hint" id="sessionLine">正在创建会话…</p>
+
+  <div class="box">
+    <input type="file" id="file" accept="image/jpeg,image/png,image/gif,image/webp" />
+    <img id="preview" alt="预览" />
+    <p class="hint" id="info">还没有选图片</p>
+    <p class="warn" id="warn"></p>
+  </div>
+
+  <div class="box">
+    <input type="text" id="question" placeholder="例如：这张图里的总金额是多少？" />
+    <button id="send">提问</button>
+    <span class="hint" id="status"></span>
+  </div>
+
+  <div class="box" id="chat"></div>
+
+  <div class="box">
+    <h2 style="font-size:16px">这一轮的花费记录</h2>
+    <table>
+      <thead><tr><th>接口</th><th>输入 tokens</th><th>输出 tokens</th><th>缓存命中</th></tr></thead>
+      <tbody id="costBody"></tbody>
+    </table>
+  </div>
+
+  <script>
+    const fileInput = document.getElementById("file");
+    const preview = document.getElementById("preview");
+    const infoEl = document.getElementById("info");
+    const warnEl = document.getElementById("warn");
+    const chatEl = document.getElementById("chat");
+    const statusEl = document.getElementById("status");
+    const sessionLine = document.getElementById("sessionLine");
+    const costBody = document.getElementById("costBody");
+
+    let current = null;
+    let sessionId = null;
+
+    async function createSession() {
+      const res = await fetch("/api/assistant/session", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title: new Date().toLocaleString() + " 的会话" }),
+      });
+      const data = await res.json();
+      sessionId = data.id;
+      sessionLine.textContent = "会话编号 " + sessionId + "（刷新页面会新建一个）";
+    }
+    createSession();
+
+    fileInput.addEventListener("change", () => {
+      warnEl.textContent = "";
+      const file = fileInput.files[0];
+      if (!file) return;
+      if (file.size > 4 * 1024 * 1024) {
+        warnEl.textContent = "超过 4MB，先用画图另存为 JPEG。";
+        current = null;
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = () => {
+        const dataUrl = reader.result;
+        const comma = dataUrl.indexOf(",");
+        const head = dataUrl.slice(0, comma);
+        const base64 = dataUrl.slice(comma + 1);
+        const mime = head.slice(5, head.indexOf(";"));
+        preview.src = dataUrl;
+        preview.style.display = "block";
+        const probe = new Image();
+        probe.onload = () => {
+          infoEl.textContent = file.name + " | " + probe.naturalWidth + " x " + probe.naturalHeight + " | " + file.size + " 字节";
+          current = { base64: base64, mime: mime };
+        };
+        probe.src = dataUrl;
+      };
+      reader.readAsDataURL(file);
+    });
+
+    function addBubble(role, text) {
+      const div = document.createElement("div");
+      div.className = "bubble " + (role === "user" ? "user" : "bot");
+      div.textContent = text;
+      chatEl.appendChild(div);
+      return div;
+    }
+
+    document.getElementById("send").addEventListener("click", async () => {
+      if (!sessionId) {
+        statusEl.textContent = "会话还没建好，等一秒再点";
+        return;
+      }
+      if (!current) {
+        statusEl.textContent = "先选一张图";
+        return;
+      }
+      const question = document.getElementById("question").value.trim();
+      if (!question) {
+        statusEl.textContent = "问题不能为空";
+        return;
+      }
+
+      addBubble("user", question);
+      document.getElementById("question").value = "";
+      statusEl.textContent = "处理中…";
+      const started = Date.now();
+
+      try {
+        const res = await fetch("/api/assistant/" + sessionId + "/ask", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ base64: current.base64, mime: current.mime, question: question }),
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          addBubble("bot", "失败（HTTP " + res.status + "）：" + (data.error || "没有说明"));
+          statusEl.textContent = "";
+          return;
+        }
+
+        const bubble = addBubble("bot", data.answer);
+        const audio = document.createElement("audio");
+        audio.controls = true;
+        audio.src = data.tts.url;
+        bubble.appendChild(audio);
+
+        const tr = document.createElement("tr");
+        tr.innerHTML =
+          "<td>chat.completions</td><td>" + data.usage.prompt_tokens +
+          "</td><td>" + data.usage.completion_tokens + "</td><td>" + (data.tts.cacheHit ? "是" : "否") + "</td>";
+        costBody.appendChild(tr);
+
+        statusEl.textContent = "完成，用了 " + ((Date.now() - started) / 1000).toFixed(1) + " 秒";
+      } catch (err) {
+        addBubble("bot", "请求没发出去：" + err.message);
+        statusEl.textContent = "";
+      }
+    });
+  </script>
+</body>
+</html>
