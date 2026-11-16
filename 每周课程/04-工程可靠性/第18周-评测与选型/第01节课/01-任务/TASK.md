@@ -1,12 +1,190 @@
 # 第 120 节课：把"感觉好多了"变成一句能判的话
 
 > **这份文件是你（学员）一步一步照着做的操作手册。**
-> 今天不写程序。今天只产出一个文件：`eval/eval-spec.md`。
+> 今天基本上不写程序。今天主要产出一个文件：`eval/eval-spec.md`。
 > 这个文件是后面六节课的地基。**地基歪了，房子越高越危险。**
+>
+> **唯一的例外**：如果第 0 步之前那节检查发现你还没有"分诊"接口，先花 10 分钟建一个。**没有它，这七节课无从评起。**
 
-**建议用时**：110 分钟
-**你需要先完成**：第 119 节（你的客服工单系统能跑通，能分类、能生成回复）
+**建议用时**：120 分钟（其中 10 分钟给第 0 步之前的那个接口检查）
+**你需要先完成**：第 119 节（你的 `chat-app` 能跑、能调模型、能返回回复）
 **今天不装新东西**
+
+---
+
+# 第 0 步之前：确认你评测的是哪个东西（10 分钟）
+
+**从这一节到第 126 节，评测对象只有一个：`chat-app` 里的"工单分诊"能力。**
+
+不是沟通页面，不是看板，不是 `summary-app`。**是你第 3 周建的那份 `chat-app`**，加上一个把客户消息转成结构化 JSON 的接口。
+
+## 0.0.1 为什么必须用它
+
+第 18 周要回答"这个版本比上个版本好吗"。**"聊天回复好不好"没法量化**——同一句话可以有一百种合理说法。
+
+**分诊可以。** 一条消息进来，输出固定五个字段，对错能逐条判。这是把"我感觉好多了"变成"通过率从 68% 涨到 79%"的唯一办法。
+
+## 0.0.2 你这个接口现在有没有
+
+```bash
+cd "B:\OPC-Distance_study\每周课程\01-元技能与基础\第03周-后端与对话\第04节课\03-练习代码\chat-app"
+grep -n "api/triage" server.js
+```
+
+**有输出 → 跳过下面，直接进第 0 步。**
+
+**没输出 → 花 10 分钟建一个。** 后面七节课全都靠它。
+
+## 0.0.3 建 `src/triage.js`
+
+```javascript
+// chat-app/src/triage.js
+const PROMPT = `你是客服工单分诊员。把客户发来的消息转成一个 JSON 对象。
+
+只输出 JSON，不要任何解释、不要 markdown 代码块。
+
+字段与取值：
+  category           logistics | quality | refund | invoice | account | other
+  urgency            high | medium | low
+  need_human         true | false
+  summary            一句话，不超过 40 字
+  suggested_action   给一线客服的一句话建议`;
+
+export async function triage(message) {
+  const base = process.env.LLM_BASE_URL || "http://localhost:4010/v1";
+  const res = await fetch(`${base}/chat/completions`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${process.env.LLM_API_KEY || "mock"}`,
+    },
+    body: JSON.stringify({
+      model: process.env.LLM_MODEL || "mock-model",
+      temperature: 0,
+      messages: [
+        { role: "system", content: PROMPT },
+        { role: "user", content: String(message).slice(0, 2000) },
+      ],
+    }),
+  });
+
+  if (!res.ok) throw new Error(`模型返回 ${res.status}`);
+
+  const data = await res.json();
+  const text = data.choices?.[0]?.message?.content ?? "";
+
+  // 模型爱在 JSON 外面包 ```json ... ```，这里剥掉
+  const clean = text.trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "");
+
+  try {
+    return JSON.parse(clean);
+  } catch {
+    return { _parse_error: true, _raw: text };
+  }
+}
+```
+
+**注意最后那个 `catch`。** 模型返回的不是合法 JSON 时，你不许抛异常、不许返回空——**要把它原样带回去**。第 122 节记录回答、第 124 节自动判分，都要靠这个 `_raw` 才能分清"答错了"和"根本没按格式答"。**这是分类错误的第一步。**
+
+## 0.0.4 在 `server.js` 里挂上
+
+```javascript
+// server.js 顶部
+import { triage } from "./src/triage.js";
+
+// 路由区
+app.post("/api/triage", async (req, res) => {
+  const { message } = req.body ?? {};
+  if (!message || typeof message !== "string") {
+    return res.status(400).json({ error: "message 必填" });
+  }
+  try {
+    res.json(await triage(message));
+  } catch (e) {
+    res.status(502).json({ error: e.message });
+  }
+});
+```
+
+> Express 5 已经内置 `express.json()`，`req.body` 直接可用。如果你这份 `server.js` 是第 3 周的写法、没挂 `app.use(express.json())`，**先补上**，否则 `req.body` 是 `undefined`，接口一直返回 400。
+
+## 0.0.5 跑通它
+
+```bash
+node server.js
+```
+
+**另开一个窗口：**
+
+```bash
+curl -X POST http://localhost:3000/api/triage ^
+  -H "Content-Type: application/json" ^
+  -d "{\"message\":\"我买的杯子到货就碎了，三天没人管，我要退款\"}"
+```
+
+PowerShell 里换成这一行（`^` 是 cmd 的续行符，PowerShell 用反引号或者直接写成一行）：
+
+```powershell
+curl -X POST http://localhost:3000/api/triage -H "Content-Type: application/json" -d '{\"message\":\"我买的杯子到货就碎了，三天没人管，我要退款\"}'
+```
+
+**你应该看到类似这样：**
+
+```json
+{
+  "category": "refund",
+  "urgency": "high",
+  "need_human": true,
+  "summary": "到货破损，三天无人处理，要求退款",
+  "suggested_action": "先核实订单与破损照片，符合条件直接走退款"
+}
+```
+
+**看到一个 JSON，五个字段都在 → 通过，进第 0 步。**
+
+> **为什么后面几节的脚本不直接调这个接口？**
+>
+> 第 122 节的 `run.js` 会绕过服务，直接打模型的 `/chat/completions`。**原因有两个**：一次要跑 30 条 × 3 个模型，走 HTTP 服务太慢；而且走服务你就改不了 `temperature`、`max_tokens` 这些参数，没法做对比实验。
+>
+> **所以这一周的关系是**：`triage.js` 里的那段 `PROMPT` 抽出来存成 `eval/prompt.txt`，评测跑的是它。**到第 126 节定了用哪个模型、哪个版本，再回头把模型名填进 `triage.js` 的环境变量。** 接口和评测脚本评的是同一个东西，只是执行路径不同。
+
+## 0.0.6 如果你用的是假模型（第 20 节课那个）
+
+假模型只会回"你说的是「xxx」。这是模拟回复。"，**不是 JSON**，评测会全是 `_parse_error`。
+
+**给 `src/mock-llm.js` 加一条分支**，放在处理 `text` 之前：
+
+```javascript
+// system prompt 里含"分诊"时，按关键词返回固定 JSON
+const sys = payload.messages?.[0]?.content ?? "";
+if (sys.includes("分诊")) {
+  const t = text;
+  const body = {
+    category: /退款|退钱|退货/.test(t) ? "refund"
+            : /碎|坏|破损|质量/.test(t) ? "quality"
+            : /发货|物流|快递/.test(t) ? "logistics"
+            : /发票|开票/.test(t) ? "invoice"
+            : /账号|登录|密码/.test(t) ? "account"
+            : "other",
+    urgency: /投诉|三天|急|马上|立刻/.test(t) ? "high" : "low",
+    need_human: true,
+    summary: t.slice(0, 20),
+    suggested_action: "先核实情况，再决定是否转人工",
+  };
+  res.writeHead(200, { "Content-Type": "application/json" });
+  res.end(JSON.stringify({
+    id: "chatcmpl-mock",
+    object: "chat.completion",
+    created: Math.floor(Date.now() / 1000),
+    model: payload.model || "mock-model",
+    choices: [{ index: 0, message: { role: "assistant", content: JSON.stringify(body) }, finish_reason: "stop" }],
+    usage: { prompt_tokens: 10, completion_tokens: 20, total_tokens: 30 },
+  }));
+  return;
+}
+```
+
+**用假模型完全不丢东西：** 第 121 节出题、第 122 节跑批、第 123 节盲评、第 124 节对齐判分，练的都是**方法**，不是模型本身。**等你换了真模型，方法照用，只是数字会变。**
 
 ---
 
